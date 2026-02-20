@@ -1,0 +1,40 @@
+name: Daily AI News Update
+
+# 매일 한국시간 오전 8시에 자동 실행 (UTC 23시 = KST 08시)
+on:
+  schedule:
+    - cron: '0 23 * * *'
+  workflow_dispatch:  # 수동 실행도 가능
+
+jobs:
+  update-news:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install google-generativeai feedparser python-dotenv requests
+
+      - name: Run news collector
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python collect_news.py
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./
+          publish_branch: gh-pages
+          exclude_assets: '.github,collect_news.py,.env,.gitignore'
