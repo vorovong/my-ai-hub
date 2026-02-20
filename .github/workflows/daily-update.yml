@@ -18,13 +18,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Fetch existing archive from gh-pages
+        run: |
+          git fetch origin gh-pages --depth=1 || true
+          git checkout origin/gh-pages -- archive/ || true
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
       - name: Install dependencies
-        run: pip install google-generativeai feedparser python-dotenv requests
+        run: pip install google-generativeai feedparser python-dotenv requests trafilatura lxml_html_clean youtube-transcript-api
 
       - name: Run news collector
         env:
@@ -37,4 +42,5 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./
           publish_branch: gh-pages
+          keep_files: true
           exclude_assets: '.github,collect_news.py,.env,.gitignore'
