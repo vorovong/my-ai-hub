@@ -192,11 +192,12 @@ def process_with_gemini(articles, all_sources, max_retries=2):
 1. AI와 관련된 기사만 선별 (최대 20개)
 2. 각 기사를 구조적으로 정리:
    - title_ko: 한국어 제목
-   - summary_ko: 한 줄 핵심 요약 (1문장)
+   - summary_ko: 핵심 요약 (2-3문장, 무슨 일이 일어났는지 + 왜 중요한지)
    - key_points: 핵심 포인트 3개 (개조식, 각각 1-2문장)
    - significance: 이 뉴스가 왜 중요한지, 어떤 의미/전망이 있는지 (2-3문장)
 3. 카테고리 분류: model(모델/빅3), dev(개발), content(콘텐츠 생성), insight(인사이트), tip(팁)
    - insight = 깊은 분석, 미래 전망, 산업의 의미 있는 해석. 단순 펀딩/주가 뉴스는 제외.
+   - 카테고리 균형: content(콘텐츠 생성)를 최소 3개 이상 포함. 모든 카테고리에서 최소 1개 이상 선별. insight가 전체의 40%를 넘지 않도록.
 4. 신뢰도가 높은 소스의 기사를 우선 배치
 5. 중요도 순으로 정렬
 
@@ -337,21 +338,19 @@ def _build_news_items(processed_articles):
         key_points = a.get("key_points", [])
         significance = a.get("significance", "")
 
-        details_html = ""
-        if key_points or significance:
-            kp_html = ""
-            if key_points:
-                kp_items = "".join(f"<li>{kp}</li>" for kp in key_points)
-                kp_html = f'<ul class="key-points">{kp_items}</ul>'
-            sig_html = ""
-            if significance:
-                sig_html = f'<div class="news-significance">{significance}</div>'
-            details_html = f"""
+        # key_points는 기본 노출, significance만 접기
+        kp_html = ""
+        if key_points:
+            kp_items = "".join(f"<li>{kp}</li>" for kp in key_points)
+            kp_html = f'\n          <ul class="key-points">{kp_items}</ul>'
+        sig_html = ""
+        if significance:
+            sig_html = f"""
           <details class="news-details">
-            <summary>자세히 보기</summary>
-            {kp_html}
-            {sig_html}
+            <summary>왜 중요한가?</summary>
+            <div class="news-significance">{significance}</div>
           </details>"""
+        details_html = kp_html + sig_html
 
         items += f"""
       <li class="news-item" data-category="{cat}">
@@ -500,6 +499,23 @@ CSS = """
       text-align: center; padding: 24px; font-size: 11px;
       color: #aaa; border-top: 1px solid #eee; margin-top: 24px;
     }
+    /* 모바일 반응형 */
+    @media (max-width: 600px) {
+      header { flex-direction: column; gap: 6px; padding: 8px 12px; }
+      nav { flex-wrap: wrap; gap: 6px; }
+      nav a { font-size: 12px; padding: 6px 10px; }
+      .date-bar { font-size: 11px; padding: 4px 12px; }
+      main { padding: 6px 12px; }
+      .filter-btn { padding: 6px 14px; font-size: 12px; min-height: 36px; }
+      .news-item { gap: 8px; padding: 10px 0; }
+      .news-num { min-width: 22px; font-size: 13px; }
+      .news-title { font-size: 14px; }
+      .news-summary { font-size: 12px; }
+      .key-points { font-size: 12px; margin-left: 16px; }
+      .news-significance { font-size: 12px; }
+      .archive-header { flex-direction: column; gap: 6px; }
+      #archive-date-select { width: 100%; }
+    }
 """
 
 JS = """
@@ -606,12 +622,8 @@ JS = """
       const kps = (a.key_points || []).map(k => '<li>' + k + '</li>').join('');
       const sig = a.significance || '';
       let det = '';
-      if (kps || sig) {
-        det = '<details class="news-details"><summary>\\uc790\\uc138\\ud788 \\ubcf4\\uae30</summary>';
-        if (kps) det += '<ul class="key-points">' + kps + '</ul>';
-        if (sig) det += '<div class="news-significance">' + sig + '</div>';
-        det += '</details>';
-      }
+      if (kps) det += '<ul class="key-points">' + kps + '</ul>';
+      if (sig) det += '<details class="news-details"><summary>\\uc65c \\uc911\\uc694\\ud55c\\uac00?</summary><div class="news-significance">' + sig + '</div></details>';
       const li = document.createElement('li');
       li.className = 'news-item';
       li.dataset.category = cat;
