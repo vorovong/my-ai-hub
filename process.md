@@ -169,22 +169,39 @@ KST = timezone(timedelta(hours=9))
 
 ---
 
-## 현재 상태 (v3.2)
+## v3.3 — 블로그 크롤링 + 소스 정리 (2026-02-21)
 
-- 27개 소스에서 자동 수집 (19개 RSS, 8개 수동)
-- v3.1에서 콘텐츠 생성 카테고리 소스 대폭 강화 (Midjourney, Kling, Suno, Figma, ElevenLabs)
+### 동기
+- RSS 없는 수동 소스가 소스 탭에 링크만 표시되고 실제 뉴스 수집을 하지 않음
+- 크롤링 불가능한 소스(쓰레드, 뉴스레터) 정리 필요
+
+### 변경 내용
+- **블로그 크롤러 4개 추가**: Anthropic(BSoup SSR), Stability AI(Squarespace JSON), Suno(Next.js __NEXT_DATA__), 업스테이지(BSoup SSR)
+- **소스 정리**: 최개발/The Batch/AI Journal 삭제 (27→24개), Kling/Suno URL을 블로그로 수정
+- **main() 파이프라인**: RSS 수집 후 블로그 크롤링 결과를 합쳐서 Gemini로 전달
+- **daily-update.yml**: beautifulsoup4 패키지 추가
+
+### 결과
+- 24개 소스 중 23개 자동 수집 (19 RSS + 4 크롤링), 1개(Kling) 링크만 유지
+
+---
+
+## 현재 상태 (v3.3)
+
+- 24개 소스 (19개 RSS + 4개 크롤링 + 1개 링크만)
 - 빅3 소스 완성 (Google AI, OpenAI, Anthropic)
-- 원문 크롤링 + 유튜브 자막 추출로 깊이 있는 요약
+- 콘텐츠 생성 카테고리 강화 (Midjourney, Kling, Suno, Figma, ElevenLabs, Stability AI)
+- 원문 크롤링 + 유튜브 자막 추출 + 블로그 크롤링으로 깊이 있는 요약
 - 날짜별 아카이브 축적 중
-- 모바일 반응형 대응 (v3에서 글씨 크기/태그 밀림 개선)
+- 모바일 반응형 대응
 - KST 기준 날짜 표시
-- 개조식 명사구 + my_impact 기반 콘텐츠 구조 (v3)
-- 아카이브 카테고리 필터 추가 (v3)
-- **코드 리팩토링 완료** — CSS/JS 분리, CONFIG 통합, 함수 분해 (v3.2)
+- 개조식 명사구 + my_impact 기반 콘텐츠 구조
+- 아카이브 카테고리 필터
+- 코드 리팩토링 완료 (v3.2)
 
 ### 알려진 제한사항
 - 일부 사이트(TechCrunch 등) 봇 차단으로 원문 크롤링 실패 → RSS description fallback
-- RSS 없는 소스 8개 (Anthropic, Kling, Suno, Stability AI, 최개발, The Batch, 업스테이지, AI Journal)는 자동 수집 불가
+- Kling AI — SPA + 봇차단으로 크롤링 불가, 소스 탭 링크만 유지
 - **근본적 한계**: 단일 파이프라인 구조로는 "편집장" 수준의 큐레이션 불가 → 독립 프로젝트 전환 완료 (ai-briefing)
 
 ---

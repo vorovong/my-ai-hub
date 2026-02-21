@@ -1,5 +1,26 @@
 # Changelog
 
+## v3.3 — 블로그 크롤링 + 소스 정리 (2026-02-21)
+
+### 블로그 자동 크롤링 (RSS 없는 4개 소스)
+- **Anthropic News** — BeautifulSoup SSR 크롤링
+- **Stability AI** — Squarespace JSON API (`?format=json`)
+- **Suno Blog** — Next.js `__NEXT_DATA__` JSON 파싱
+- **업스테이지 AI 블로그** — BeautifulSoup SSR 크롤링
+- Kling AI는 SPA + 봇차단으로 크롤링 불가, 링크만 유지
+
+### 소스 정리
+- **삭제 3개**: 최개발(쓰레드, 로그인 필요), The Batch(뉴스레터), AI Journal(뉴스레터)
+- **URL 수정**: Kling AI → 블로그 페이지, Suno → 블로그 페이지
+- 27개 → 24개 소스 (19개 RSS + 5개 수동, 이 중 4개 크롤링 자동화)
+
+### 테스트 결과
+- 4/4 블로그 크롤링 성공 (각 10개 기사)
+- HTML 생성: 통과 (24개 소스 반영)
+- Import + 기본 함수: 통과
+
+---
+
 ## v3.2 — 코드 리팩토링 (2026-02-21)
 
 ### 구조 개선

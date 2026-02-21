@@ -29,7 +29,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install dependencies
-        run: pip install google-genai feedparser python-dotenv requests trafilatura lxml_html_clean youtube-transcript-api
+        run: pip install google-genai feedparser python-dotenv requests trafilatura lxml_html_clean youtube-transcript-api beautifulsoup4
 
       - name: Run news collector
         env:

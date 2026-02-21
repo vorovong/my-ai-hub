@@ -151,7 +151,145 @@ def fetch_youtube_transcript(url: str) -> str | None:
 
 
 # ---------------------------------------------------------------------------
-# 기사 수집
+# 블로그 크롤링 (RSS 없는 소스)
+# ---------------------------------------------------------------------------
+
+def _scrape_anthropic(src: dict) -> list[dict]:
+    """Anthropic News 페이지 크롤링 (SSR, BeautifulSoup)"""
+    from bs4 import BeautifulSoup
+    import requests as _req
+
+    resp = _req.get(src["url"], headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
+    soup = BeautifulSoup(resp.text, "html.parser")
+
+    articles = []
+    for item in soup.select('a[class*="PublicationList"][class*="listItem"]'):
+        title_el = item.select_one('span[class*="title"]')
+        if not title_el:
+            continue
+        href = item.get("href", "")
+        articles.append({
+            "title": title_el.get_text(strip=True),
+            "link": f"https://www.anthropic.com{href}" if href.startswith("/") else href,
+            "source": src["name"],
+            "trust": src.get("trust", CONFIG["default_trust"]),
+            "description": "",
+            "full_text": None,
+        })
+    return articles[:CONFIG["max_entries_per_feed"]]
+
+
+def _scrape_stability(src: dict) -> list[dict]:
+    """Stability AI News 크롤링 (Squarespace JSON API)"""
+    import requests as _req
+
+    resp = _req.get(
+        "https://stability.ai/news",
+        params={"format": "json"},
+        headers={"User-Agent": "Mozilla/5.0"},
+        timeout=15,
+    )
+    data = resp.json()
+
+    articles = []
+    for item in data.get("items", [])[:CONFIG["max_entries_per_feed"]]:
+        articles.append({
+            "title": item.get("title", ""),
+            "link": "https://stability.ai" + item.get("fullUrl", ""),
+            "source": src["name"],
+            "trust": src.get("trust", CONFIG["default_trust"]),
+            "description": item.get("excerpt", "")[:CONFIG["description_max_chars"]],
+            "full_text": None,
+        })
+    return articles
+
+
+def _scrape_suno(src: dict) -> list[dict]:
+    """Suno Blog 크롤링 (Next.js __NEXT_DATA__ JSON)"""
+    from bs4 import BeautifulSoup
+    import requests as _req
+
+    resp = _req.get(src["url"], headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
+    soup = BeautifulSoup(resp.text, "html.parser")
+
+    script = soup.find("script", id="__NEXT_DATA__")
+    if not script or not script.string:
+        return []
+
+    data = json.loads(script.string)
+    posts = data.get("props", {}).get("pageProps", {}).get("allPosts", [])
+
+    articles = []
+    for post in posts[:CONFIG["max_entries_per_feed"]]:
+        articles.append({
+            "title": post.get("title", ""),
+            "link": f"https://suno.com/blog/{post.get('slug', '')}",
+            "source": src["name"],
+            "trust": src.get("trust", CONFIG["default_trust"]),
+            "description": post.get("summary", "")[:CONFIG["description_max_chars"]],
+            "full_text": None,
+        })
+    return articles
+
+
+def _scrape_upstage(src: dict) -> list[dict]:
+    """업스테이지 블로그 크롤링 (SSR, BeautifulSoup)"""
+    from bs4 import BeautifulSoup
+    import requests as _req
+
+    resp = _req.get(src["url"], headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
+    soup = BeautifulSoup(resp.text, "html.parser")
+
+    articles = []
+    for card in soup.select("a.all-blog-card-v2:not(.w-condition-invisible)"):
+        title_el = card.select_one("h3.text-size-large")
+        if not title_el:
+            continue
+        href = card.get("href", "")
+        link = f"https://www.upstage.ai{href}" if href.startswith("/") else href
+        articles.append({
+            "title": title_el.get_text(strip=True),
+            "link": link,
+            "source": src["name"],
+            "trust": src.get("trust", CONFIG["default_trust"]),
+            "description": "",
+            "full_text": None,
+        })
+    return articles[:CONFIG["max_entries_per_feed"]]
+
+
+# 소스 이름 → 크롤러 매핑
+_SCRAPERS: dict[str, callable] = {
+    "Anthropic News": _scrape_anthropic,
+    "Stability AI": _scrape_stability,
+    "Suno": _scrape_suno,
+    "업스테이지 AI 블로그": _scrape_upstage,
+}
+
+
+def fetch_blog_articles(unfeedable: list[dict]) -> list[dict]:
+    """RSS 없는 블로그 소스에서 크롤링으로 기사 수집"""
+    articles = []
+    for src in unfeedable:
+        scraper = _SCRAPERS.get(src["name"])
+        if not scraper:
+            continue
+        try:
+            result = scraper(src)
+            # 원문 크롤링 시도
+            for article in result:
+                full = fetch_full_article(article["link"])
+                if full:
+                    article["full_text"] = full
+            articles.extend(result)
+            print(f"  OK {src['name']}: {len(result)}개 (크롤링)")
+        except Exception as e:
+            print(f"  FAIL {src['name']}: {e}")
+    return articles
+
+
+# ---------------------------------------------------------------------------
+# 기사 수집 (RSS)
 # ---------------------------------------------------------------------------
 
 def fetch_articles(sources: list[dict]) -> list[dict]:
@@ -589,7 +727,12 @@ def main() -> None:
 
     print("뉴스 수집 중 (원문 크롤링 + 자막 추출 포함)...")
     articles = fetch_articles(feedable)
-    print(f"  총 {len(articles)}개 기사\n")
+    print(f"  RSS 소스: {len(articles)}개 기사")
+
+    print("블로그 크롤링 중 (RSS 없는 소스)...")
+    blog_articles = fetch_blog_articles(unfeedable)
+    articles.extend(blog_articles)
+    print(f"  총 {len(articles)}개 기사 (RSS {len(articles) - len(blog_articles)} + 크롤링 {len(blog_articles)})\n")
 
     print("소스 다양성 필터 적용...")
     articles = ensure_source_diversity(articles)
