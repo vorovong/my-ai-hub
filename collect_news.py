@@ -516,28 +516,41 @@ CSS = """
       text-align: center; padding: 24px; font-size: 11px;
       color: #aaa; border-top: 1px solid #eee; margin-top: 24px;
     }
-    /* 모바일 반응형 */
+    /* 모바일 반응형 — Apple HIG / Material Design 기준 */
     @media (max-width: 600px) {
-      header { flex-direction: column; gap: 6px; padding: 10px 14px; }
-      nav { flex-wrap: wrap; gap: 6px; }
-      nav a { font-size: 13px; padding: 7px 12px; }
-      .date-bar { font-size: 12px; padding: 6px 14px; }
-      main { padding: 8px 14px; }
-      .filter-btn { padding: 7px 14px; font-size: 13px; min-height: 38px; }
-      .news-item { gap: 10px; padding: 14px 0; }
-      .news-num { min-width: 24px; font-size: 15px; }
-      .news-title { font-size: 16px; line-height: 1.4; }
-      .news-source { font-size: 12px; display: block; margin-left: 0; margin-top: 2px; }
-      .news-summary { font-size: 14px; line-height: 1.6; }
-      .key-points { font-size: 14px; margin-left: 16px; line-height: 1.7; }
-      .news-impact { font-size: 14px; }
-      .news-significance { font-size: 14px; }
-      .news-meta { gap: 6px; margin-top: 6px; flex-wrap: nowrap; }
-      .news-tag { font-size: 11px; padding: 2px 8px; white-space: nowrap; }
-      .trust { font-size: 11px; white-space: nowrap; }
-      .news-details summary { font-size: 13px; }
-      .archive-header { flex-direction: column; gap: 6px; }
-      #archive-date-select { width: 100%; font-size: 14px; padding: 8px 12px; }
+      html { -webkit-text-size-adjust: 100%; }
+      body { touch-action: manipulation; }
+      header { flex-direction: column; gap: 8px; padding: 12px 16px; }
+      header h1 { font-size: 18px; }
+      nav { flex-wrap: wrap; gap: 8px; }
+      nav a { font-size: 15px; padding: 10px 14px; min-height: 44px; display: flex; align-items: center; }
+      .date-bar { font-size: 14px; padding: 8px 16px; }
+      main { padding: 10px 16px; }
+      .filter-btn { padding: 10px 16px; font-size: 14px; min-height: 44px; }
+      .news-item { gap: 10px; padding: 16px 0; }
+      .news-num { min-width: 24px; font-size: 16px; }
+      .news-title { font-size: 17px; line-height: 1.5; }
+      .news-source { font-size: 13px; display: block; margin-left: 0; margin-top: 3px; }
+      .news-summary { font-size: 16px; line-height: 1.7; }
+      .key-points { font-size: 15px; margin-left: 16px; line-height: 1.7; }
+      .key-points li { margin-bottom: 6px; }
+      .news-impact { font-size: 15px; line-height: 1.6; }
+      .news-significance { font-size: 15px; line-height: 1.6; }
+      .news-meta { gap: 8px; margin-top: 8px; flex-wrap: nowrap; }
+      .news-tag { font-size: 12px; padding: 3px 10px; white-space: nowrap; }
+      .trust { font-size: 12px; white-space: nowrap; }
+      .news-details summary { font-size: 15px; padding: 8px 0; }
+      .source-item { padding: 14px 16px; }
+      .source-header { gap: 10px; }
+      .source-header strong { font-size: 16px; }
+      .source-note { font-size: 15px; }
+      .source-focus { font-size: 13px; }
+      .source-badge { font-size: 12px; }
+      .archive-header { flex-direction: column; gap: 8px; }
+      .archive-header label { font-size: 15px; }
+      #archive-date-select { width: 100%; font-size: 16px; padding: 10px 14px; min-height: 44px; }
+      .empty-state p { font-size: 16px; }
+      footer { font-size: 13px; padding: 20px 16px; }
     }
 """
 
