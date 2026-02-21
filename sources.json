@@ -11,16 +11,6 @@
       "note": "한국 해커뉴스. 개발/테크 뉴스 커뮤니티 큐레이션. 내가 가장 많이 보는 곳."
     },
     {
-      "name": "choi.openai (최개발)",
-      "url": "https://www.threads.com/@choi.openai",
-      "feed_url": null,
-      "type": "threads",
-      "trust": 4,
-      "focus": ["ai_tools", "model_news", "tips", "papers"],
-      "language": "ko",
-      "note": "쓰레드 AI 뉴스 최대 채널. 빠른 소식 전달, 다양한 AI 도구 활용법."
-    },
-    {
       "name": "노정석 (Chester Roh)",
       "url": "https://www.youtube.com/@chester_roh",
       "feed_url": "https://www.youtube.com/feeds/videos.xml?channel_id=UCz-BiVywYdO6iXhjXkw_Kgw",
@@ -49,16 +39,6 @@
       "focus": ["dev", "tech", "startup", "ai"],
       "language": "en",
       "note": "원조 해커뉴스. 긱뉴스의 원본."
-    },
-    {
-      "name": "The Batch (Andrew Ng)",
-      "url": "https://www.deeplearning.ai/the-batch/",
-      "feed_url": null,
-      "type": "newsletter",
-      "trust": 5,
-      "focus": ["model_news", "ai_fundamentals", "papers", "insight"],
-      "language": "en",
-      "note": "앤드류 응 교수 주간 AI 뉴스레터. 최신 동향 + 논문 + 산업 전망."
     },
     {
       "name": "Lex Fridman Podcast",
@@ -259,16 +239,6 @@
       "focus": ["model_news", "ai_fundamentals", "papers"],
       "language": "ko",
       "note": "국내 AI 기업 기술 블로그."
-    },
-    {
-      "name": "The AI Journal",
-      "url": "https://theaijournal.kr/",
-      "feed_url": null,
-      "type": "newsletter",
-      "trust": 3,
-      "focus": ["model_news", "insight", "tips"],
-      "language": "ko",
-      "note": "한국어 AI 전문 뉴스 큐레이션."
     }
   ],
   "pending": [],
