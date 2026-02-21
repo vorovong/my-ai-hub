@@ -186,12 +186,37 @@ KST = timezone(timedelta(hours=9))
 
 ---
 
-## 현재 상태 (v3.3)
+## v3.4 — 링크 매칭 버그 수정 (2026-02-21)
+
+### 동기
+- 배포 후 사용자 확인 시, 뉴스 피드의 기사 링크를 클릭하면 전혀 다른 페이지로 연결되는 버그 발견
+- 예: "Claude Code 해커톤, 비개발자 수상자 다수" → f-droid.org로 연결
+
+### 원인 분석
+- Gemini에게 230개 기사를 `[0], [1], [2]...` 인덱스로 전달
+- Gemini가 요약을 생성하면서 **인덱스를 잘못 매핑**하여, 한 기사의 제목에 다른 기사의 인덱스를 붙여서 반환
+- `_parse_gemini_response()`가 인덱스만으로 원본 기사를 찾기 때문에, 잘못된 link/source가 매핑됨
+
+### 변경 내용
+- **프롬프트 수정**: Gemini 출력 스키마에 `link` 필드 추가, "index와 link는 원본에서 그대로 복사하라" 명시
+- **`_parse_gemini_response()` 3단계 매핑**:
+  1. Gemini가 반환한 link를 원본 articles 딕셔너리에서 직접 조회 (가장 신뢰)
+  2. link 매칭 실패 시 index fallback
+  3. 둘 다 실패 시 `#` + 경고 로그
+- **교차 검증**: link와 index가 다른 기사를 가리키면 경고 출력, link 우선 사용
+
+### 결과
+- 배포 후 15/15 기사 전부 링크-제목-소스 정확 일치 확인
+
+---
+
+## 현재 상태 (v3.4)
 
 - 24개 소스 (19개 RSS + 4개 크롤링 + 1개 링크만)
 - 빅3 소스 완성 (Google AI, OpenAI, Anthropic)
 - 콘텐츠 생성 카테고리 강화 (Midjourney, Kling, Suno, Figma, ElevenLabs, Stability AI)
 - 원문 크롤링 + 유튜브 자막 추출 + 블로그 크롤링으로 깊이 있는 요약
+- Gemini 링크 매칭: link 기반 우선 + index fallback + 교차 검증
 - 날짜별 아카이브 축적 중
 - 모바일 반응형 대응
 - KST 기준 날짜 표시
@@ -202,6 +227,7 @@ KST = timezone(timedelta(hours=9))
 ### 알려진 제한사항
 - 일부 사이트(TechCrunch 등) 봇 차단으로 원문 크롤링 실패 → RSS description fallback
 - Kling AI — SPA + 봇차단으로 크롤링 불가, 소스 탭 링크만 유지
+- Gemini link fallback 시 여전히 index 기반이므로, link를 반환하지 않는 경우 불일치 가능성 잔존
 - **근본적 한계**: 단일 파이프라인 구조로는 "편집장" 수준의 큐레이션 불가 → 독립 프로젝트 전환 완료 (ai-briefing)
 
 ---
@@ -209,6 +235,8 @@ KST = timezone(timedelta(hours=9))
 ## 향후 개선 후보 (미니 프로젝트 범위)
 - [x] `google.genai` 패키지 마이그레이션 (v3.0에서 완료)
 - [x] 코드 리팩토링 (v3.2에서 완료)
+- [x] 블로그 크롤링 자동화 (v3.3에서 완료)
+- [x] Gemini 링크 매칭 버그 수정 (v3.4에서 완료)
 - [ ] GA 연동
 - [ ] 주간 요약 자동 생성
 
