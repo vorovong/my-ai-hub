@@ -191,6 +191,66 @@
       "note": "Stable Diffusion 개발사. 이미지/영상 생성 AI. RSS 미제공."
     },
     {
+      "name": "Anthropic News",
+      "url": "https://www.anthropic.com/news",
+      "feed_url": null,
+      "type": "news",
+      "trust": 5,
+      "focus": ["model_news", "ai_fundamentals", "papers"],
+      "language": "en",
+      "note": "빅3 Anthropic(Claude 개발사) 공식 뉴스. 1차 소스. RSS 미제공."
+    },
+    {
+      "name": "Midjourney Updates",
+      "url": "https://updates.midjourney.com",
+      "feed_url": "https://updates.midjourney.com/rss/",
+      "type": "blog",
+      "trust": 4,
+      "focus": ["content_creation", "model_news"],
+      "language": "en",
+      "note": "이미지 생성 AI 대표 서비스. 모델 업데이트, 새 기능 발표."
+    },
+    {
+      "name": "Kling AI",
+      "url": "https://klingai.com",
+      "feed_url": null,
+      "type": "blog",
+      "trust": 4,
+      "focus": ["content_creation", "model_news"],
+      "language": "en",
+      "note": "Kuaishou 영상 생성 AI. RSS 미제공."
+    },
+    {
+      "name": "Suno",
+      "url": "https://suno.com",
+      "feed_url": null,
+      "type": "blog",
+      "trust": 4,
+      "focus": ["content_creation", "model_news"],
+      "language": "en",
+      "note": "음악 생성 AI. RSS 미제공."
+    },
+    {
+      "name": "Figma Blog",
+      "url": "https://www.figma.com",
+      "feed_url": "https://www.figma.com/blog/feed/atom.xml",
+      "type": "blog",
+      "trust": 5,
+      "focus": ["content_creation", "dev", "tips"],
+      "language": "en",
+      "note": "AI 디자인 도구 공식 블로그. Atom feed."
+    },
+    {
+      "name": "ElevenLabs",
+      "url": "https://elevenlabs.io",
+      "feed_url": "https://elevenlabs.io/docs/changelog.rss",
+      "type": "changelog",
+      "trust": 5,
+      "focus": ["content_creation", "model_news"],
+      "language": "en",
+      "note": "음성/TTS AI. 블로그 RSS 없음, Changelog RSS만 존재."
+    },
+    {
       "name": "업스테이지 AI 블로그",
       "url": "https://upstage.ai/blog",
       "feed_url": null,

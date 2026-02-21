@@ -135,7 +135,13 @@ KST = timezone(timedelta(hours=9))
 - [x] **아카이브 카테고리 필터 추가**: 뉴스 피드와 동일한 필터 버튼, 날짜 변경 시 필터 리셋, 공통 `setupFilters()` 함수로 리팩토링
 
 ### 남은 작업
-- [ ] **공식 소스 확장** — Anthropic, Midjourney, Kling, Suno, Figma, ElevenLabs 등 sources.json 추가
+- [x] **공식 소스 확장** — 6개 소스 sources.json 추가 완료
+  - Anthropic News (RSS 없음, 수동)
+  - Midjourney Updates (`https://updates.midjourney.com/rss/`) — RSS 확인
+  - Kling AI (RSS 없음, 수동)
+  - Suno (RSS 없음, 수동)
+  - Figma Blog (`https://www.figma.com/blog/feed/atom.xml`) — Atom feed 확인
+  - ElevenLabs (`https://elevenlabs.io/docs/changelog.rss`) — Changelog RSS만 존재
 - [ ] **PRD + Spec 문서** — 편집장 에이전트 아키텍처의 독립 프로젝트 설계 문서
 - [ ] **리뷰 문서** — 미니 → 풀 프로젝트 전환 과정을 동료가 이해할 수 있는 문서
 
@@ -143,7 +149,7 @@ KST = timezone(timedelta(hours=9))
 
 ## 현재 상태 (v3 작업 중)
 
-- 21개 소스에서 자동 수집 (16개 RSS, 5개 수동)
+- 27개 소스에서 자동 수집 (19개 RSS, 8개 수동)
 - 원문 크롤링 + 유튜브 자막 추출로 깊이 있는 요약
 - 날짜별 아카이브 축적 중
 - 모바일 반응형 대응 (v3에서 글씨 크기/태그 밀림 개선)
@@ -164,6 +170,28 @@ KST = timezone(timedelta(hours=9))
 - [ ] GA 연동
 - [ ] 주간 요약 자동 생성
 
-## 독립 프로젝트 전환 예정 (편집장 아키텍처)
-- 스카우트 → 편집장(타이틀 필터링) → 리서처(심층 크롤링+보완) → 편집장(최종 편집)
-- 상세 내용은 PRD/Spec 문서로 별도 작성 예정
+## 풀 프로젝트 전환 완료 — ai-briefing (2026-02-21)
+
+### 전환 배경
+v3.0 사용 중 핵심 한계 도달:
+- 15개 기사 중 관심 있는 건 5개 정도 → 개인화 필터링 필요
+- 수준 불일치 (너무 기초 or 너무 어려움) → 수준별 요약 필요
+- "편집장 에이전트"가 필요하다는 사용자 직접 요청
+
+### 이중 플래닝 패턴 적용
+1. ✅ Step 1: 플랜 모드에서 깊은 대화 (컨텍스트 축적)
+2. ✅ Step 2: 설계 문서 생성 (`~/projects/ai-briefing/`)
+   - `CLAUDE.md` — 프로젝트 세션 기반 문서
+   - `prd.md` — 요구사항 정의서
+   - `spec.md` — 기술 설계서
+3. ⬜ Step 3: 새 세션에서 문서 기반 재계획
+4. ⬜ Step 4: 실행
+
+### 아키텍처 변경
+- **기존** (v3.0): 단일 스크립트 `collect_news.py` (수집→요약→출력 일체형)
+- **신규** (ai-briefing): 5개 에이전트 파이프라인
+  - Scout (수집) → Profiler (프로필 매칭) → Editor (편집장) → Writer (브리핑) → Publisher (배포)
+
+### 병행 운영
+- ai-news-hub v3.0은 ai-briefing M3 완료 + 2주 안정화까지 계속 운영
+- 새 시스템 안정 확인 후 v3.0 GitHub Actions 비활성화 예정
