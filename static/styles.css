@@ -1,0 +1,146 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  background: #f6f6ef; color: #333; line-height: 1.5;
+}
+header {
+  background: #6b4ce6; padding: 8px 16px;
+  display: flex; align-items: center; gap: 16px;
+}
+header h1 { color: #fff; font-size: 16px; font-weight: bold; white-space: nowrap; }
+nav { display: flex; gap: 12px; }
+nav a {
+  color: rgba(255,255,255,0.85); text-decoration: none;
+  font-size: 13px; padding: 4px 8px; border-radius: 4px; transition: background 0.15s;
+}
+nav a:hover { background: rgba(255,255,255,0.15); }
+nav a.active { color: #fff; font-weight: 600; background: rgba(255,255,255,0.2); }
+.date-bar {
+  background: #f0edf8; padding: 6px 16px;
+  font-size: 12px; color: #666; border-bottom: 1px solid #e0dce8;
+}
+main { max-width: 900px; margin: 0 auto; padding: 8px 16px; }
+.filters { display: flex; gap: 8px; padding: 12px 0; flex-wrap: wrap; }
+.filter-btn {
+  background: #fff; border: 1px solid #ddd; padding: 4px 12px;
+  border-radius: 16px; font-size: 12px; color: #555;
+  cursor: pointer; transition: all 0.15s;
+}
+.filter-btn:hover { border-color: #6b4ce6; color: #6b4ce6; }
+.filter-btn.active { background: #6b4ce6; color: #fff; border-color: #6b4ce6; }
+.news-list { list-style: none; }
+.news-item {
+  display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid #eee;
+}
+.news-num {
+  color: #999; font-size: 14px; min-width: 28px;
+  text-align: right; padding-top: 2px; font-weight: 500;
+}
+.news-content { flex: 1; }
+.news-title { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+.news-title a { color: #333; text-decoration: none; }
+.news-title a:hover { color: #6b4ce6; }
+.news-source { font-size: 12px; color: #999; margin-left: 6px; font-weight: 400; }
+.news-summary { font-size: 13px; color: #666; margin: 4px 0; line-height: 1.6; }
+.news-meta { font-size: 11px; color: #999; display: flex; gap: 8px; margin-top: 4px; align-items: center; flex-wrap: nowrap; }
+.news-tag {
+  display: inline-block; font-size: 11px; padding: 1px 8px;
+  border-radius: 10px; font-weight: 500;
+}
+.trust { font-size: 11px; color: #e8b84b; letter-spacing: -1px; }
+.tag-model { background: #eef; color: #55c; }
+.tag-dev { background: #efe; color: #5a5; }
+.tag-content { background: #fef; color: #a5a; }
+.tag-tip { background: #ffe; color: #a85; }
+.tag-insight { background: #f0f0ff; color: #669; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.empty-state { text-align: center; padding: 60px 20px; color: #999; }
+.empty-state p { font-size: 14px; }
+/* 소스 목록 */
+.source-item {
+  background: #fff; border: 1px solid #eee; border-radius: 8px;
+  padding: 12px 16px; margin: 8px 0;
+}
+.source-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.source-header a { color: #333; text-decoration: none; }
+.source-header a:hover { color: #6b4ce6; }
+.source-note { font-size: 13px; color: #666; }
+.source-focus { font-size: 11px; color: #999; margin-top: 4px; }
+.source-badge {
+  font-size: 10px; padding: 1px 6px; border-radius: 8px; font-weight: 500;
+}
+.badge-auto { background: #e8f5e9; color: #4a7; }
+.badge-manual { background: #fff3e0; color: #a85; }
+/* 상세 보기 */
+.news-details { margin: 6px 0 2px 0; }
+.news-details summary {
+  font-size: 12px; color: #6b4ce6; cursor: pointer;
+  user-select: none; font-weight: 500;
+}
+.news-details summary:hover { text-decoration: underline; }
+.key-points {
+  margin: 8px 0 8px 20px; font-size: 13px; color: #444;
+  line-height: 1.7;
+}
+.key-points li { margin-bottom: 4px; }
+.news-impact {
+  font-size: 13px; color: #6b4ce6; font-weight: 500;
+  margin: 6px 0 2px 0; line-height: 1.5;
+}
+.news-impact::before { content: "→ "; }
+.news-significance {
+  font-size: 13px; color: #555; background: #f8f7ff;
+  padding: 8px 12px; border-radius: 6px; margin: 6px 0;
+  border-left: 3px solid #6b4ce6; line-height: 1.6;
+}
+/* 아카이브 탭 */
+.archive-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 0; border-bottom: 1px solid #eee;
+}
+.archive-header label { font-size: 13px; color: #666; }
+#archive-date-select {
+  padding: 6px 12px; border: 1px solid #ddd; border-radius: 8px;
+  font-size: 13px; background: #fff; color: #333; cursor: pointer;
+}
+footer {
+  text-align: center; padding: 24px; font-size: 11px;
+  color: #aaa; border-top: 1px solid #eee; margin-top: 24px;
+}
+/* 모바일 반응형 */
+@media (max-width: 600px) {
+  html { -webkit-text-size-adjust: 100%; }
+  body { touch-action: manipulation; }
+  header { flex-direction: column; gap: 8px; padding: 12px 16px; }
+  header h1 { font-size: 18px; }
+  nav { flex-wrap: wrap; gap: 8px; }
+  nav a { font-size: 15px; padding: 10px 14px; min-height: 44px; display: flex; align-items: center; }
+  .date-bar { font-size: 14px; padding: 8px 16px; }
+  main { padding: 10px 16px; }
+  .filter-btn { padding: 10px 16px; font-size: 14px; min-height: 44px; }
+  .news-item { gap: 10px; padding: 16px 0; }
+  .news-num { min-width: 24px; font-size: 16px; }
+  .news-title { font-size: 17px; line-height: 1.5; }
+  .news-source { font-size: 13px; display: block; margin-left: 0; margin-top: 3px; }
+  .news-summary { font-size: 16px; line-height: 1.7; }
+  .key-points { font-size: 15px; margin-left: 16px; line-height: 1.7; }
+  .key-points li { margin-bottom: 6px; }
+  .news-impact { font-size: 15px; line-height: 1.6; }
+  .news-significance { font-size: 15px; line-height: 1.6; }
+  .news-meta { gap: 8px; margin-top: 8px; flex-wrap: nowrap; }
+  .news-tag { font-size: 12px; padding: 3px 10px; white-space: nowrap; }
+  .trust { font-size: 12px; white-space: nowrap; }
+  .news-details summary { font-size: 15px; padding: 8px 0; }
+  .source-item { padding: 14px 16px; }
+  .source-header { gap: 10px; }
+  .source-header strong { font-size: 16px; }
+  .source-note { font-size: 15px; }
+  .source-focus { font-size: 13px; }
+  .source-badge { font-size: 12px; }
+  .archive-header { flex-direction: column; gap: 8px; }
+  .archive-header label { font-size: 15px; }
+  #archive-date-select { width: 100%; font-size: 16px; padding: 10px 14px; min-height: 44px; }
+  .empty-state p { font-size: 16px; }
+  footer { font-size: 13px; padding: 20px 16px; }
+}

@@ -4,13 +4,9 @@ My AI Hub - AI 뉴스 자동 수집 & 요약 스크립트
 
 sources.json에 등록된 소스에서 뉴스를 수집하고,
 Gemini 2.5 Flash로 요약/분류하여 HTML 페이지를 생성한다.
-
-개선사항:
-- Phase A: Gemini JSON 파싱 에러 핸들링 + 재시도, 소스 다양성 보장
-- Phase B: 날짜별 아카이브 저장, 아카이브 탭
-- Phase C: 원문 크롤링(trafilatura), 유튜브 자막 추출, 깊이 있는 요약
-- Phase D: 소스 확장 (sources.json)
 """
+
+from __future__ import annotations
 
 import feedparser
 from google import genai
@@ -21,20 +17,79 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 import time
 
+# ---------------------------------------------------------------------------
+# 경로 상수
+# ---------------------------------------------------------------------------
 KST = timezone(timedelta(hours=9))
-
 BASE_DIR = Path(__file__).parent
 ARCHIVE_DIR = BASE_DIR / "archive"
+STATIC_DIR = BASE_DIR / "static"
 
-load_dotenv(BASE_DIR / ".env")
-gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+# ---------------------------------------------------------------------------
+# 설정 (수정이 필요하면 여기만 바꾸세요)
+# ---------------------------------------------------------------------------
+CONFIG = {
+    # 수집
+    "max_entries_per_feed": 10,
+    "description_max_chars": 500,
+    "full_text_max_chars": 3000,
+    "max_per_source": 3,
+
+    # Gemini 처리
+    "gemini_model": "gemini-2.5-flash",
+    "gemini_max_retries": 2,
+    "gemini_retry_delay": 2,
+    "content_max_chars": 1500,
+    "description_fallback_chars": 300,
+    "max_selected_articles": 15,
+
+    # 신뢰도
+    "default_trust": 3,
+    "max_trust": 5,
+
+    # 카테고리
+    "categories": {
+        "model": ("tag-model", "모델/빅3"),
+        "dev": ("tag-dev", "개발"),
+        "content": ("tag-content", "콘텐츠 생성"),
+        "insight": ("tag-insight", "인사이트"),
+        "tip": ("tag-tip", "팁"),
+    },
+}
+
+
+# ---------------------------------------------------------------------------
+# 헬퍼 함수
+# ---------------------------------------------------------------------------
+
+def _trust_stars(trust: int) -> str:
+    """신뢰도를 별점 문자열로 변환 (예: ★★★☆☆)"""
+    t = min(trust, CONFIG["max_trust"])
+    return "★" * t + "☆" * (CONFIG["max_trust"] - t)
+
+
+def _load_asset(filename: str) -> str:
+    """static/ 폴더에서 CSS/JS 파일을 읽어 반환"""
+    asset_path = STATIC_DIR / filename
+    if not asset_path.exists():
+        print(f"  경고: {asset_path} 파일을 찾을 수 없습니다.")
+        return ""
+    return asset_path.read_text(encoding="utf-8")
+
+
+def _build_filter_buttons() -> str:
+    """카테고리 필터 버튼 HTML 생성 (뉴스 피드 + 아카이브 공통)"""
+    buttons = '      <button class="filter-btn active" data-filter="all">전체</button>\n'
+    for cat_id, (_, label) in CONFIG["categories"].items():
+        buttons += f'      <button class="filter-btn" data-filter="{cat_id}">{label}</button>\n'
+    return buttons
 
 
 # ---------------------------------------------------------------------------
 # 소스 로딩
 # ---------------------------------------------------------------------------
 
-def load_sources():
+def load_sources() -> tuple[list[dict], list[dict], dict]:
     """sources.json에서 trusted 소스 중 feed_url이 있는 것만 반환"""
     with open(BASE_DIR / "sources.json", encoding="utf-8") as f:
         data = json.load(f)
@@ -51,24 +106,24 @@ def load_sources():
 
 
 # ---------------------------------------------------------------------------
-# Phase C: 원문 크롤링 + 유튜브 자막 추출
+# 원문 크롤링 + 유튜브 자막 추출
 # ---------------------------------------------------------------------------
 
-def fetch_full_article(url):
-    """trafilatura로 기사 본문 추출 (최대 3000자)"""
+def fetch_full_article(url: str) -> str | None:
+    """trafilatura로 기사 본문 추출"""
     try:
         import trafilatura
         downloaded = trafilatura.fetch_url(url)
         if downloaded:
             text = trafilatura.extract(downloaded)
             if text:
-                return text[:3000]
+                return text[:CONFIG["full_text_max_chars"]]
     except Exception as e:
         print(f"    원문 크롤링 실패: {e}")
     return None
 
 
-def fetch_youtube_transcript(url):
+def fetch_youtube_transcript(url: str) -> str | None:
     """유튜브 영상 자막 추출 (한국어 우선, 영어 fallback)"""
     try:
         from youtube_transcript_api import YouTubeTranscriptApi
@@ -86,7 +141,7 @@ def fetch_youtube_transcript(url):
             try:
                 transcript = api.fetch(video_id, languages=langs)
                 text = " ".join([snippet.text for snippet in transcript])
-                return text[:3000] if text else None
+                return text[:CONFIG["full_text_max_chars"]] if text else None
             except Exception:
                 continue
         return None
@@ -99,26 +154,26 @@ def fetch_youtube_transcript(url):
 # 기사 수집
 # ---------------------------------------------------------------------------
 
-def fetch_articles(sources):
+def fetch_articles(sources: list[dict]) -> list[dict]:
     """RSS 피드가 있는 소스에서 기사 수집 + 원문/자막 추출"""
     articles = []
+    max_entries = CONFIG["max_entries_per_feed"]
     for src in sources:
         try:
             feed = feedparser.parse(src["feed_url"])
-            count = min(len(feed.entries), 10)
-            for entry in feed.entries[:10]:
+            count = min(len(feed.entries), max_entries)
+            for entry in feed.entries[:max_entries]:
                 article = {
                     "title": entry.get("title", ""),
                     "link": entry.get("link", ""),
                     "source": src["name"],
-                    "trust": src.get("trust", 3),
+                    "trust": src.get("trust", CONFIG["default_trust"]),
                     "description": entry.get(
                         "summary", entry.get("description", "")
-                    )[:500],
+                    )[:CONFIG["description_max_chars"]],
                     "full_text": None,
                 }
 
-                # 소스 타입에 따라 원문/자막 추출
                 if src.get("type") == "youtube":
                     transcript = fetch_youtube_transcript(article["link"])
                     if transcript:
@@ -137,45 +192,47 @@ def fetch_articles(sources):
 
 
 # ---------------------------------------------------------------------------
-# Phase A: 소스 다양성 보장
+# 소스 다양성 보장
 # ---------------------------------------------------------------------------
 
-def ensure_source_diversity(articles, max_per_source=3):
-    """소스당 최대 max_per_source개로 제한하여 다양성 보장"""
-    source_counts = {}
-    diverse = []
-    for a in articles:
-        source = a["source"]
+def ensure_source_diversity(
+    articles: list[dict],
+    max_per_source: int | None = None,
+) -> list[dict]:
+    """소스당 최대 N개로 제한하여 다양성 보장"""
+    limit = max_per_source or CONFIG["max_per_source"]
+    source_counts: dict[str, int] = {}
+    filtered = []
+    for article in articles:
+        source = article["source"]
         source_counts[source] = source_counts.get(source, 0) + 1
-        if source_counts[source] <= max_per_source:
-            diverse.append(a)
-    return diverse
+        if source_counts[source] <= limit:
+            filtered.append(article)
+    return filtered
 
 
 # ---------------------------------------------------------------------------
-# Phase A: Gemini 처리 (에러 핸들링 + 재시도)
+# Gemini 처리
 # ---------------------------------------------------------------------------
 
-def process_with_gemini(articles, all_sources, max_retries=2):
-    """Gemini로 기사를 요약/분류. JSON 파싱 에러 시 최대 2회 재시도."""
-    # 소스 맥락 생성
+def _build_gemini_prompt(articles: list[dict], all_sources: list[dict]) -> str:
+    """Gemini에 보낼 프롬프트 구성"""
     source_context = "\n".join(
-        f"- {s['name']} (신뢰도 {s.get('trust',3)}/5): {s.get('note','')}"
+        f"- {s['name']} (신뢰도 {s.get('trust', CONFIG['default_trust'])}/5): {s.get('note', '')}"
         for s in all_sources
     )
 
-    # 기사 텍스트 구성 — 원문이 있으면 원문 사용
     articles_text = ""
     for i, a in enumerate(articles):
-        content = a.get("full_text") or a.get("description", "")[:300]
+        content = a.get("full_text") or a.get("description", "")[:CONFIG["description_fallback_chars"]]
         articles_text += (
             f"\n---\n[{i}] 제목: {a['title']}\n"
             f"출처: {a['source']} (신뢰도: {a['trust']}/5)\n"
             f"링크: {a['link']}\n"
-            f"내용:\n{content[:1500]}\n"
+            f"내용:\n{content[:CONFIG['content_max_chars']]}\n"
         )
 
-    prompt = f"""당신은 AI 뉴스 큐레이터입니다.
+    return f"""당신은 AI 뉴스 큐레이터입니다.
 
 ## 사용자가 신뢰하는 소스 목록
 {source_context}
@@ -195,7 +252,7 @@ def process_with_gemini(articles, all_sources, max_retries=2):
   - 이미 알려진 기본 개념 반복
 
 ## 작업
-1. AI와 관련된 기사만 선별 (최대 15개). 양보다 질.
+1. AI와 관련된 기사만 선별 (최대 {CONFIG['max_selected_articles']}개). 양보다 질.
 2. 각 기사를 **개조식 명사구(-음, -임 등)**로 간결하게 정리:
    - title_ko: 한국어 제목 (간결하게)
    - summary_ko: 핵심 사실 1문장 (-음/-임 체)
@@ -228,50 +285,86 @@ def process_with_gemini(articles, all_sources, max_retries=2):
 ## 기사 목록
 {articles_text}"""
 
-    for attempt in range(max_retries + 1):
+
+def _call_gemini_with_retry(
+    client: genai.Client,
+    prompt: str,
+    max_retries: int | None = None,
+) -> str | None:
+    """Gemini API 호출 + 재시도. 성공 시 응답 텍스트, 실패 시 None 반환."""
+    retries = max_retries if max_retries is not None else CONFIG["gemini_max_retries"]
+    for attempt in range(retries + 1):
         try:
-            response = gemini_client.models.generate_content(
-                model="gemini-2.5-flash", contents=prompt
+            response = client.models.generate_content(
+                model=CONFIG["gemini_model"], contents=prompt
             )
-            text = response.text
-            if "```json" in text:
-                text = text.split("```json")[1].split("```")[0]
-            elif "```" in text:
-                text = text.split("```")[1].split("```")[0]
-
-            processed = json.loads(text.strip())
-
-            for item in processed:
-                idx = item["index"]
-                if idx < len(articles):
-                    item["link"] = articles[idx]["link"]
-                    item["source"] = articles[idx]["source"]
-                    item["trust"] = articles[idx]["trust"]
-
-            return processed
+            return response.text
         except json.JSONDecodeError as e:
-            print(
-                f"  JSON 파싱 실패 (시도 {attempt + 1}/{max_retries + 1}): {e}"
-            )
-            if attempt < max_retries:
-                time.sleep(2)
+            print(f"  JSON 파싱 실패 (시도 {attempt + 1}/{retries + 1}): {e}")
+            if attempt < retries:
+                time.sleep(CONFIG["gemini_retry_delay"])
         except Exception as e:
-            print(
-                f"  Gemini 오류 (시도 {attempt + 1}/{max_retries + 1}): {e}"
-            )
-            if attempt < max_retries:
-                time.sleep(2)
+            print(f"  Gemini 오류 (시도 {attempt + 1}/{retries + 1}): {e}")
+            if attempt < retries:
+                time.sleep(CONFIG["gemini_retry_delay"])
+    return None
 
-    # 모든 재시도 실패 → 이전 아카이브에서 로드
+
+def _parse_gemini_response(text: str, articles: list[dict]) -> list[dict]:
+    """Gemini 응답 텍스트에서 JSON 파싱 + 원본 데이터 매핑"""
+    if "```json" in text:
+        text = text.split("```json")[1].split("```")[0]
+    elif "```" in text:
+        text = text.split("```")[1].split("```")[0]
+
+    processed = json.loads(text.strip())
+
+    for item in processed:
+        idx = item.get("index")
+        if idx is not None and 0 <= idx < len(articles):
+            item["link"] = articles[idx]["link"]
+            item["source"] = articles[idx]["source"]
+            item["trust"] = articles[idx].get("trust", CONFIG["default_trust"])
+        else:
+            item.setdefault("link", "#")
+            item.setdefault("source", "알 수 없음")
+            item.setdefault("trust", CONFIG["default_trust"])
+
+    return processed
+
+
+def process_with_gemini(
+    articles: list[dict],
+    all_sources: list[dict],
+    client: genai.Client,
+    max_retries: int | None = None,
+) -> list[dict]:
+    """Gemini로 기사를 요약/분류. 실패 시 이전 아카이브 fallback."""
+    prompt = _build_gemini_prompt(articles, all_sources)
+    retries = max_retries if max_retries is not None else CONFIG["gemini_max_retries"]
+
+    for attempt in range(retries + 1):
+        raw_text = _call_gemini_with_retry(client, prompt, max_retries=0)
+        if raw_text is None:
+            if attempt < retries:
+                time.sleep(CONFIG["gemini_retry_delay"])
+            continue
+        try:
+            return _parse_gemini_response(raw_text, articles)
+        except json.JSONDecodeError as e:
+            print(f"  JSON 파싱 실패 (시도 {attempt + 1}/{retries + 1}): {e}")
+            if attempt < retries:
+                time.sleep(CONFIG["gemini_retry_delay"])
+
     print("  Gemini 완전 실패. 이전 아카이브에서 로드 시도...")
     return load_latest_archive()
 
 
 # ---------------------------------------------------------------------------
-# Phase B: 아카이브 시스템
+# 아카이브 시스템
 # ---------------------------------------------------------------------------
 
-def save_archive(processed_articles):
+def save_archive(processed_articles: list[dict]) -> dict:
     """날짜별 아카이브 JSON 저장 + 인덱스 업데이트"""
     ARCHIVE_DIR.mkdir(exist_ok=True)
     today = datetime.now(KST).strftime("%Y-%m-%d")
@@ -293,7 +386,7 @@ def save_archive(processed_articles):
     return archive_data
 
 
-def update_archive_index():
+def update_archive_index() -> None:
     """archive_index.json 업데이트 — 사용 가능한 날짜 목록"""
     dates = sorted(
         [f.stem for f in ARCHIVE_DIR.glob("*.json") if f.stem != "archive_index"],
@@ -307,50 +400,41 @@ def update_archive_index():
     print(f"  아카이브 인덱스 업데이트: {len(dates)}개 날짜")
 
 
-def load_latest_archive():
+def load_latest_archive() -> list[dict]:
     """가장 최근 아카이브에서 기사 로드 (Gemini 실패 시 fallback)"""
     if not ARCHIVE_DIR.exists():
         return []
 
-    archives = sorted(ARCHIVE_DIR.glob("*.json"), reverse=True)
-    for f in archives:
+    archive_files = sorted(ARCHIVE_DIR.glob("*.json"), reverse=True)
+    for f in archive_files:
         if f.stem == "archive_index":
             continue
         try:
             data = json.loads(f.read_text(encoding="utf-8"))
             print(f"  이전 아카이브 로드: {f.name} ({data['article_count']}개)")
             return data.get("articles", [])
-        except Exception:
+        except Exception as e:
+            print(f"  아카이브 파일 읽기 실패 ({f.name}): {e}")
             continue
     return []
 
 
 # ---------------------------------------------------------------------------
-# HTML 생성 헬퍼
+# HTML 생성
 # ---------------------------------------------------------------------------
 
-def _build_news_items(processed_articles):
-    """뉴스 항목 HTML 생성 (key_points, significance 포함)"""
-    tag_classes = {
-        "model": ("tag-model", "모델/빅3"),
-        "dev": ("tag-dev", "개발"),
-        "content": ("tag-content", "콘텐츠 생성"),
-        "insight": ("tag-insight", "인사이트"),
-        "tip": ("tag-tip", "팁"),
-    }
-
+def _build_news_items(processed_articles: list[dict]) -> str:
+    """뉴스 항목 HTML 생성"""
     items = ""
-    for i, a in enumerate(processed_articles, 1):
-        cat = a.get("category", "model")
-        tag_class, tag_label = tag_classes.get(cat, ("tag-model", cat))
-        trust = a.get("trust", 3)
-        trust_stars = "★" * trust + "☆" * (5 - trust)
+    for i, article in enumerate(processed_articles, 1):
+        cat = article.get("category", "model")
+        tag_class, tag_label = CONFIG["categories"].get(cat, ("tag-model", cat))
+        trust = article.get("trust", CONFIG["default_trust"])
+        trust_display = _trust_stars(trust)
 
-        # key_points & my_impact
-        key_points = a.get("key_points", [])
-        my_impact = a.get("my_impact", "") or a.get("significance", "")
+        key_points = article.get("key_points", [])
+        my_impact = article.get("my_impact", "") or article.get("significance", "")
 
-        # key_points는 접기, my_impact는 바로 노출
         kp_html = ""
         if key_points:
             kp_items = "".join(f"<li>{kp}</li>" for kp in key_points)
@@ -359,9 +443,11 @@ def _build_news_items(processed_articles):
             <summary>자세히 보기</summary>
             <ul class="key-points">{kp_items}</ul>
           </details>"""
+
         impact_html = ""
         if my_impact:
             impact_html = f'\n          <div class="news-impact">{my_impact}</div>'
+
         details_html = impact_html + kp_html
 
         items += f"""
@@ -369,13 +455,13 @@ def _build_news_items(processed_articles):
         <span class="news-num">{i}</span>
         <div class="news-content">
           <div class="news-title">
-            <a href="{a.get('link', '#')}" target="_blank">{a.get('title_ko', '')}</a>
-            <span class="news-source">({a.get('source', '')})</span>
+            <a href="{article.get('link', '#')}" target="_blank">{article.get('title_ko', '')}</a>
+            <span class="news-source">({article.get('source', '')})</span>
           </div>
-          <div class="news-summary">{a.get('summary_ko', '')}</div>{details_html}
+          <div class="news-summary">{article.get('summary_ko', '')}</div>{details_html}
           <div class="news-meta">
             <span class="news-tag {tag_class}">{tag_label}</span>
-            <span class="trust" title="소스 신뢰도">{trust_stars}</span>
+            <span class="trust" title="소스 신뢰도">{trust_display}</span>
           </div>
         </div>
       </li>"""
@@ -383,319 +469,38 @@ def _build_news_items(processed_articles):
     return items
 
 
-def _build_source_items(all_sources):
+def _build_source_items(all_sources: list[dict]) -> str:
     """소스 목록 HTML 생성"""
     items = ""
-    for s in sorted(all_sources, key=lambda x: x.get("trust", 3), reverse=True):
-        trust = s.get("trust", 3)
-        stars = "★" * trust + "☆" * (5 - trust)
-        has_feed = "auto" if s.get("feed_url") else "manual"
-        focus_tags = ", ".join(s.get("focus", []))
+    for source in sorted(all_sources, key=lambda x: x.get("trust", CONFIG["default_trust"]), reverse=True):
+        trust = source.get("trust", CONFIG["default_trust"])
+        stars = _trust_stars(trust)
+        has_feed = "auto" if source.get("feed_url") else "manual"
+        focus_tags = ", ".join(source.get("focus", []))
         items += f"""
       <div class="source-item">
         <div class="source-header">
-          <strong><a href="{s['url']}" target="_blank">{s['name']}</a></strong>
+          <strong><a href="{source['url']}" target="_blank">{source['name']}</a></strong>
           <span class="trust">{stars}</span>
           <span class="source-badge badge-{has_feed}">{has_feed}</span>
         </div>
-        <div class="source-note">{s.get('note', '')}</div>
+        <div class="source-note">{source.get('note', '')}</div>
         <div class="source-focus">{focus_tags}</div>
       </div>"""
     return items
 
 
-# CSS와 JS는 f-string 밖에서 정의 (중괄호 이스케이프 불필요)
-CSS = """
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-      background: #f6f6ef; color: #333; line-height: 1.5;
-    }
-    header {
-      background: #6b4ce6; padding: 8px 16px;
-      display: flex; align-items: center; gap: 16px;
-    }
-    header h1 { color: #fff; font-size: 16px; font-weight: bold; white-space: nowrap; }
-    nav { display: flex; gap: 12px; }
-    nav a {
-      color: rgba(255,255,255,0.85); text-decoration: none;
-      font-size: 13px; padding: 4px 8px; border-radius: 4px; transition: background 0.15s;
-    }
-    nav a:hover { background: rgba(255,255,255,0.15); }
-    nav a.active { color: #fff; font-weight: 600; background: rgba(255,255,255,0.2); }
-    .date-bar {
-      background: #f0edf8; padding: 6px 16px;
-      font-size: 12px; color: #666; border-bottom: 1px solid #e0dce8;
-    }
-    main { max-width: 900px; margin: 0 auto; padding: 8px 16px; }
-    .filters { display: flex; gap: 8px; padding: 12px 0; flex-wrap: wrap; }
-    .filter-btn {
-      background: #fff; border: 1px solid #ddd; padding: 4px 12px;
-      border-radius: 16px; font-size: 12px; color: #555;
-      cursor: pointer; transition: all 0.15s;
-    }
-    .filter-btn:hover { border-color: #6b4ce6; color: #6b4ce6; }
-    .filter-btn.active { background: #6b4ce6; color: #fff; border-color: #6b4ce6; }
-    .news-list { list-style: none; }
-    .news-item {
-      display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid #eee;
-    }
-    .news-num {
-      color: #999; font-size: 14px; min-width: 28px;
-      text-align: right; padding-top: 2px; font-weight: 500;
-    }
-    .news-content { flex: 1; }
-    .news-title { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
-    .news-title a { color: #333; text-decoration: none; }
-    .news-title a:hover { color: #6b4ce6; }
-    .news-source { font-size: 12px; color: #999; margin-left: 6px; font-weight: 400; }
-    .news-summary { font-size: 13px; color: #666; margin: 4px 0; line-height: 1.6; }
-    .news-meta { font-size: 11px; color: #999; display: flex; gap: 8px; margin-top: 4px; align-items: center; flex-wrap: nowrap; }
-    .news-tag {
-      display: inline-block; font-size: 11px; padding: 1px 8px;
-      border-radius: 10px; font-weight: 500;
-    }
-    .trust { font-size: 11px; color: #e8b84b; letter-spacing: -1px; }
-    .tag-model { background: #eef; color: #55c; }
-    .tag-dev { background: #efe; color: #5a5; }
-    .tag-content { background: #fef; color: #a5a; }
-    .tag-tip { background: #ffe; color: #a85; }
-    .tag-insight { background: #f0f0ff; color: #669; }
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
-    .empty-state { text-align: center; padding: 60px 20px; color: #999; }
-    .empty-state p { font-size: 14px; }
-    /* 소스 목록 */
-    .source-item {
-      background: #fff; border: 1px solid #eee; border-radius: 8px;
-      padding: 12px 16px; margin: 8px 0;
-    }
-    .source-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-    .source-header a { color: #333; text-decoration: none; }
-    .source-header a:hover { color: #6b4ce6; }
-    .source-note { font-size: 13px; color: #666; }
-    .source-focus { font-size: 11px; color: #999; margin-top: 4px; }
-    .source-badge {
-      font-size: 10px; padding: 1px 6px; border-radius: 8px; font-weight: 500;
-    }
-    .badge-auto { background: #e8f5e9; color: #4a7; }
-    .badge-manual { background: #fff3e0; color: #a85; }
-    /* Phase C: 상세 보기 (details/summary) */
-    .news-details { margin: 6px 0 2px 0; }
-    .news-details summary {
-      font-size: 12px; color: #6b4ce6; cursor: pointer;
-      user-select: none; font-weight: 500;
-    }
-    .news-details summary:hover { text-decoration: underline; }
-    .key-points {
-      margin: 8px 0 8px 20px; font-size: 13px; color: #444;
-      line-height: 1.7;
-    }
-    .key-points li { margin-bottom: 4px; }
-    .news-impact {
-      font-size: 13px; color: #6b4ce6; font-weight: 500;
-      margin: 6px 0 2px 0; line-height: 1.5;
-    }
-    .news-impact::before { content: "→ "; }
-    .news-significance {
-      font-size: 13px; color: #555; background: #f8f7ff;
-      padding: 8px 12px; border-radius: 6px; margin: 6px 0;
-      border-left: 3px solid #6b4ce6; line-height: 1.6;
-    }
-    /* Phase B: 아카이브 탭 */
-    .archive-header {
-      display: flex; align-items: center; gap: 12px;
-      padding: 12px 0; border-bottom: 1px solid #eee;
-    }
-    .archive-header label { font-size: 13px; color: #666; }
-    #archive-date-select {
-      padding: 6px 12px; border: 1px solid #ddd; border-radius: 8px;
-      font-size: 13px; background: #fff; color: #333; cursor: pointer;
-    }
-    footer {
-      text-align: center; padding: 24px; font-size: 11px;
-      color: #aaa; border-top: 1px solid #eee; margin-top: 24px;
-    }
-    /* 모바일 반응형 — Apple HIG / Material Design 기준 */
-    @media (max-width: 600px) {
-      html { -webkit-text-size-adjust: 100%; }
-      body { touch-action: manipulation; }
-      header { flex-direction: column; gap: 8px; padding: 12px 16px; }
-      header h1 { font-size: 18px; }
-      nav { flex-wrap: wrap; gap: 8px; }
-      nav a { font-size: 15px; padding: 10px 14px; min-height: 44px; display: flex; align-items: center; }
-      .date-bar { font-size: 14px; padding: 8px 16px; }
-      main { padding: 10px 16px; }
-      .filter-btn { padding: 10px 16px; font-size: 14px; min-height: 44px; }
-      .news-item { gap: 10px; padding: 16px 0; }
-      .news-num { min-width: 24px; font-size: 16px; }
-      .news-title { font-size: 17px; line-height: 1.5; }
-      .news-source { font-size: 13px; display: block; margin-left: 0; margin-top: 3px; }
-      .news-summary { font-size: 16px; line-height: 1.7; }
-      .key-points { font-size: 15px; margin-left: 16px; line-height: 1.7; }
-      .key-points li { margin-bottom: 6px; }
-      .news-impact { font-size: 15px; line-height: 1.6; }
-      .news-significance { font-size: 15px; line-height: 1.6; }
-      .news-meta { gap: 8px; margin-top: 8px; flex-wrap: nowrap; }
-      .news-tag { font-size: 12px; padding: 3px 10px; white-space: nowrap; }
-      .trust { font-size: 12px; white-space: nowrap; }
-      .news-details summary { font-size: 15px; padding: 8px 0; }
-      .source-item { padding: 14px 16px; }
-      .source-header { gap: 10px; }
-      .source-header strong { font-size: 16px; }
-      .source-note { font-size: 15px; }
-      .source-focus { font-size: 13px; }
-      .source-badge { font-size: 12px; }
-      .archive-header { flex-direction: column; gap: 8px; }
-      .archive-header label { font-size: 15px; }
-      #archive-date-select { width: 100%; font-size: 16px; padding: 10px 14px; min-height: 44px; }
-      .empty-state p { font-size: 16px; }
-      footer { font-size: 13px; padding: 20px 16px; }
-    }
-"""
-
-JS = """
-  // 탭 전환
-  document.querySelectorAll('nav a').forEach(link => {
-    link.addEventListener('click', e => {
-      e.preventDefault();
-      document.querySelectorAll('nav a').forEach(l => l.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-      link.classList.add('active');
-      document.getElementById('tab-' + link.dataset.tab).classList.add('active');
-      // 아카이브 탭 첫 진입 시 인덱스 로드
-      if (link.dataset.tab === 'archive' && !window._archiveLoaded) {
-        loadArchiveIndex();
-        window._archiveLoaded = true;
-      }
-    });
-  });
-
-  // 카테고리 필터 (뉴스 피드 + 아카이브 공통)
-  function setupFilters(container) {
-    container.querySelectorAll('.filter-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        container.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        const filter = btn.dataset.filter;
-        let num = 1;
-        container.querySelectorAll('.news-item').forEach(item => {
-          if (filter === 'all' || item.dataset.category === filter) {
-            item.style.display = 'flex';
-            item.querySelector('.news-num').textContent = num++;
-          } else {
-            item.style.display = 'none';
-          }
-        });
-      });
-    });
-  }
-  setupFilters(document.getElementById('tab-news'));
-  setupFilters(document.getElementById('tab-archive'));
-
-  // 아카이브 기능
-  async function loadArchiveIndex() {
-    try {
-      const res = await fetch('archive/archive_index.json');
-      if (!res.ok) throw new Error('not found');
-      const data = await res.json();
-      const select = document.getElementById('archive-date-select');
-      data.dates.forEach(d => {
-        const opt = document.createElement('option');
-        opt.value = d;
-        opt.textContent = d;
-        select.appendChild(opt);
-      });
-      if (data.dates.length > 0) {
-        select.value = data.dates[0];
-        loadArchiveDate(data.dates[0]);
-      }
-    } catch (e) {
-      document.getElementById('archive-empty').innerHTML =
-        '<p>아카이브 데이터를 불러올 수 없습니다.</p>';
-    }
-  }
-
-  document.getElementById('archive-date-select').addEventListener('change', e => {
-    if (e.target.value) {
-      // 필터 리셋
-      document.querySelectorAll('#tab-archive .filter-btn').forEach(b => b.classList.remove('active'));
-      document.querySelector('#tab-archive .filter-btn[data-filter="all"]').classList.add('active');
-      loadArchiveDate(e.target.value);
-    }
-  });
-
-  async function loadArchiveDate(date) {
-    const list = document.getElementById('archive-list');
-    const empty = document.getElementById('archive-empty');
-    list.innerHTML = '<li style="padding:20px;color:#999;">불러오는 중...</li>';
-    empty.style.display = 'none';
-    try {
-      const res = await fetch('archive/' + date + '.json');
-      if (!res.ok) throw new Error('not found');
-      const data = await res.json();
-      renderArchiveArticles(data.articles);
-    } catch (e) {
-      list.innerHTML = '';
-      empty.style.display = 'block';
-      empty.innerHTML = '<p>해당 날짜의 데이터를 불러올 수 없습니다.</p>';
-    }
-  }
-
-  function renderArchiveArticles(articles) {
-    const list = document.getElementById('archive-list');
-    const empty = document.getElementById('archive-empty');
-    list.innerHTML = '';
-    if (!articles || articles.length === 0) {
-      empty.style.display = 'block';
-      empty.innerHTML = '<p>해당 날짜에 수집된 뉴스가 없습니다.</p>';
-      return;
-    }
-    empty.style.display = 'none';
-    const tagMap = {
-      model: ['tag-model', '\\ubaa8\\ub378/\\ube453'],
-      dev: ['tag-dev', '\\uac1c\\ubc1c'],
-      content: ['tag-content', '\\ucf58\\ud150\\uce20 \\uc0dd\\uc131'],
-      insight: ['tag-insight', '\\uc778\\uc0ac\\uc774\\ud2b8'],
-      tip: ['tag-tip', '\\ud301']
-    };
-    articles.forEach((a, i) => {
-      const cat = a.category || 'model';
-      const [tc, tl] = tagMap[cat] || ['tag-model', cat];
-      const trust = a.trust || 3;
-      const stars = '\\u2605'.repeat(trust) + '\\u2606'.repeat(5 - trust);
-      const kps = (a.key_points || []).map(k => '<li>' + k + '</li>').join('');
-      const impact = a.my_impact || a.significance || '';
-      let det = '';
-      if (impact) det += '<div class="news-impact">' + impact + '</div>';
-      if (kps) det += '<details class="news-details"><summary>\\uc790\\uc138\\ud788 \\ubcf4\\uae30</summary><ul class="key-points">' + kps + '</ul></details>';
-      const li = document.createElement('li');
-      li.className = 'news-item';
-      li.dataset.category = cat;
-      li.innerHTML =
-        '<span class="news-num">' + (i+1) + '</span>' +
-        '<div class="news-content">' +
-        '<div class="news-title"><a href="' + (a.link||'#') + '" target="_blank">' + (a.title_ko||'') + '</a>' +
-        '<span class="news-source">(' + (a.source||'') + ')</span></div>' +
-        '<div class="news-summary">' + (a.summary_ko||'') + '</div>' +
-        det +
-        '<div class="news-meta"><span class="news-tag ' + tc + '">' + tl + '</span>' +
-        '<span class="trust" title="\\uc18c\\uc2a4 \\uc2e0\\ub8b0\\ub3c4">' + stars + '</span></div>' +
-        '</div>';
-      list.appendChild(li);
-    });
-  }
-"""
-
-
-def generate_html(processed_articles, all_sources):
-    """HTML 페이지 생성. 아카이브 탭 + 상세 보기 포함."""
+def generate_html(processed_articles: list[dict], all_sources: list[dict]) -> str:
+    """HTML 페이지 생성"""
     today = datetime.now(KST).strftime("%Y년 %m월 %d일")
     weekday = ["월", "화", "수", "목", "금", "토", "일"][datetime.now(KST).weekday()]
 
+    css = _load_asset("styles.css")
+    js = _load_asset("app.js")
     news_items = _build_news_items(processed_articles)
     source_items = _build_source_items(all_sources)
     source_count = len(all_sources)
+    filter_buttons = _build_filter_buttons()
 
     html = f"""<!DOCTYPE html>
 <html lang="ko">
@@ -703,7 +508,9 @@ def generate_html(processed_articles, all_sources):
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>My AI Hub</title>
-  <style>{CSS}</style>
+  <style>
+{css}
+  </style>
 </head>
 <body>
 <header>
@@ -719,12 +526,7 @@ def generate_html(processed_articles, all_sources):
 <div id="tab-news" class="tab-content active">
   <main>
     <div class="filters">
-      <button class="filter-btn active" data-filter="all">전체</button>
-      <button class="filter-btn" data-filter="model">모델/빅3</button>
-      <button class="filter-btn" data-filter="dev">개발</button>
-      <button class="filter-btn" data-filter="content">콘텐츠 생성</button>
-      <button class="filter-btn" data-filter="insight">인사이트</button>
-      <button class="filter-btn" data-filter="tip">팁</button>
+{filter_buttons}
     </div>
     <ol class="news-list">
 {news_items}
@@ -741,12 +543,7 @@ def generate_html(processed_articles, all_sources):
       </select>
     </div>
     <div class="filters archive-filters">
-      <button class="filter-btn active" data-filter="all">전체</button>
-      <button class="filter-btn" data-filter="model">모델/빅3</button>
-      <button class="filter-btn" data-filter="dev">개발</button>
-      <button class="filter-btn" data-filter="content">콘텐츠 생성</button>
-      <button class="filter-btn" data-filter="insight">인사이트</button>
-      <button class="filter-btn" data-filter="tip">팁</button>
+{filter_buttons}
     </div>
     <ol id="archive-list" class="news-list"></ol>
     <div id="archive-empty" class="empty-state">
@@ -768,7 +565,9 @@ def generate_html(processed_articles, all_sources):
 
 <footer>My AI Hub — 자동 생성됨 · {today} · 소스 {source_count}개</footer>
 
-<script>{JS}</script>
+<script>
+{js}
+</script>
 </body>
 </html>"""
     return html
@@ -778,7 +577,11 @@ def generate_html(processed_articles, all_sources):
 # 메인 실행
 # ---------------------------------------------------------------------------
 
-if __name__ == "__main__":
+def main() -> None:
+    """메인 파이프라인: 소스 로딩 → 수집 → 요약 → 아카이브 → HTML 생성"""
+    load_dotenv(BASE_DIR / ".env")
+    client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+
     print("소스 로딩...")
     feedable, unfeedable, source_data = load_sources()
     all_sources = source_data["trusted"]
@@ -789,11 +592,11 @@ if __name__ == "__main__":
     print(f"  총 {len(articles)}개 기사\n")
 
     print("소스 다양성 필터 적용...")
-    articles = ensure_source_diversity(articles, max_per_source=3)
+    articles = ensure_source_diversity(articles)
     print(f"  필터 후 {len(articles)}개 기사\n")
 
     print("Gemini로 요약 & 분류 중...")
-    processed = process_with_gemini(articles, all_sources)
+    processed = process_with_gemini(articles, all_sources, client=client)
     print(f"  {len(processed)}개 선별 완료\n")
 
     print("아카이브 저장 중...")
@@ -806,3 +609,7 @@ if __name__ == "__main__":
     print(f"  저장: {output}")
 
     print("\n완료!")
+
+
+if __name__ == "__main__":
+    main()
