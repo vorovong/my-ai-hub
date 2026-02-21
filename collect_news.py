@@ -407,10 +407,12 @@ def _build_gemini_prompt(articles: list[dict], all_sources: list[dict]) -> str:
 - GOOD my_impact: "Claude Code 사용 시 더 빠른 응답과 정확한 코드 생성 기대 가능."
 
 ## 출력 (JSON만, 다른 텍스트 없이)
+- **중요**: index와 link는 입력 기사 목록에서 그대로 복사하세요. 절대 다른 기사의 값을 섞지 마세요.
 ```json
 [
   {{
     "index": 0,
+    "link": "https://원본-기사-링크-그대로-복사",
     "title_ko": "한국어 제목",
     "summary_ko": "핵심 사실 1문장 (-음/-임 체)",
     "key_points": ["사실 1", "사실 2", "사실 3"],
@@ -449,7 +451,11 @@ def _call_gemini_with_retry(
 
 
 def _parse_gemini_response(text: str, articles: list[dict]) -> list[dict]:
-    """Gemini 응답 텍스트에서 JSON 파싱 + 원본 데이터 매핑"""
+    """Gemini 응답 텍스트에서 JSON 파싱 + 원본 데이터 매핑
+
+    Gemini가 반환한 link를 원본 articles에서 검증하고,
+    link 기반으로 source/trust를 매핑한다 (index보다 link가 더 신뢰할 수 있음).
+    """
     if "```json" in text:
         text = text.split("```json")[1].split("```")[0]
     elif "```" in text:
@@ -457,16 +463,33 @@ def _parse_gemini_response(text: str, articles: list[dict]) -> list[dict]:
 
     processed = json.loads(text.strip())
 
+    # 링크 → 원본 기사 빠른 조회용 딕셔너리
+    link_to_article: dict[str, dict] = {a["link"]: a for a in articles}
+
     for item in processed:
+        gemini_link = item.get("link", "")
         idx = item.get("index")
-        if idx is not None and 0 <= idx < len(articles):
+
+        # 전략 1: Gemini가 반환한 link가 원본에 존재하면 그대로 사용 (가장 신뢰)
+        if gemini_link and gemini_link in link_to_article:
+            matched = link_to_article[gemini_link]
+            item["link"] = matched["link"]
+            item["source"] = matched["source"]
+            item["trust"] = matched.get("trust", CONFIG["default_trust"])
+            # 교차 검증: index와 link가 같은 기사를 가리키는지 확인
+            if idx is not None and 0 <= idx < len(articles) and articles[idx]["link"] != gemini_link:
+                print(f"  교차검증 불일치: '{item.get('title_ko', '?')[:30]}' → link 기반 매핑 사용 (index {idx} 무시)")
+        # 전략 2: link 매칭 실패 시 index fallback
+        elif idx is not None and 0 <= idx < len(articles):
             item["link"] = articles[idx]["link"]
             item["source"] = articles[idx]["source"]
             item["trust"] = articles[idx].get("trust", CONFIG["default_trust"])
+            print(f"  경고: 기사 '{item.get('title_ko', '?')[:30]}' link 매칭 실패, index {idx} fallback 사용")
         else:
             item.setdefault("link", "#")
             item.setdefault("source", "알 수 없음")
             item.setdefault("trust", CONFIG["default_trust"])
+            print(f"  경고: 기사 '{item.get('title_ko', '?')[:30]}' link/index 모두 매칭 실패")
 
     return processed
 
