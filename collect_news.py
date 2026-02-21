@@ -182,26 +182,36 @@ def process_with_gemini(articles, all_sources, max_retries=2):
 ## 사용자가 신뢰하는 소스 목록
 {source_context}
 
-## 사용자 관심 분야
-- 거대 모델 3사 (Google, Anthropic, OpenAI) 뉴스
-- AI 코딩 도구 (Claude Code, Cursor, Copilot 등)
-- 콘텐츠 생성 AI (이미지, 영상, 음악, 3D)
-- AI 실용 팁과 활용법
-- AI 기초 이론과 논문
-- AI/기술의 미래 전망, 깊은 분석, 의미 있는 해석
+## 사용자 프로필
+- 비개발자. AI 도구를 활용해 업무 자동화를 배우는 중.
+- 콘텐츠 제작(영상, 이미지, 음악)에 AI를 쓰고 싶음.
+- 관심 분야:
+  - 거대 모델 3사 (Google, Anthropic, OpenAI) 동향
+  - AI 코딩 도구 (Claude Code, Cursor, Copilot 등)
+  - 콘텐츠 생성 AI (이미지, 영상, 음악, 3D)
+  - 비개발자도 따라할 수 있는 AI 실용 팁
+  - AI/기술의 미래 전망, 깊은 분석
+- 필요 없는 것:
+  - 논문 수준의 기술적 디테일
+  - 단순 펀딩/주가/인수합병 뉴스
+  - 이미 알려진 기본 개념 반복
 
 ## 작업
-1. AI와 관련된 기사만 선별 (최대 20개)
-2. 각 기사를 구조적으로 정리:
-   - title_ko: 한국어 제목
-   - summary_ko: 핵심 요약 (2-3문장, 무슨 일이 일어났는지 + 왜 중요한지)
-   - key_points: 핵심 포인트 3개 (개조식, 각각 1-2문장)
-   - significance: 이 뉴스가 왜 중요한지, 어떤 의미/전망이 있는지 (2-3문장)
-3. 카테고리 분류: model(모델/빅3), dev(개발), content(콘텐츠 생성), insight(인사이트), tip(팁)
-   - insight = 깊은 분석, 미래 전망, 산업의 의미 있는 해석. 단순 펀딩/주가 뉴스는 제외.
-   - 카테고리 균형: content(콘텐츠 생성)를 최소 3개 이상 포함. 모든 카테고리에서 최소 1개 이상 선별. insight가 전체의 40%를 넘지 않도록.
-4. 신뢰도가 높은 소스의 기사를 우선 배치
-5. 중요도 순으로 정렬
+1. AI와 관련된 기사만 선별 (최대 15개). 양보다 질.
+2. 각 기사를 **개조식 명사구(-음, -임 등)**로 간결하게 정리:
+   - title_ko: 한국어 제목 (간결하게)
+   - summary_ko: 핵심 사실 1문장 (-음/-임 체)
+   - key_points: 핵심 사실 3개 (개조식 명사구, 각각 1문장 이내)
+   - my_impact: 이 사용자에게 미치는 실질적 영향 1문장. 기사 내용을 반복하지 말 것. "이 뉴스 때문에 내가 당장/조만간 할 수 있는 것, 또는 주의할 것"의 관점에서 작성.
+3. 카테고리: model(모델/빅3), dev(개발), content(콘텐츠 생성), insight(인사이트), tip(팁)
+   - 카테고리 균형: content 최소 3개, 모든 카테고리 최소 1개, insight 40% 이하.
+4. 신뢰도 높은 소스 우선, 중요도 순 정렬
+
+## 개조식 작성 예시
+- BAD: "OpenAI가 새로운 모델을 발표했습니다. 이 모델은 기존보다 성능이 크게 향상되었습니다."
+- GOOD: "OpenAI 신규 모델 발표. 기존 대비 성능 대폭 향상됨."
+- BAD my_impact: "이는 AI 기술의 발전을 보여주며 산업에 큰 영향을 미칠 것입니다."
+- GOOD my_impact: "Claude Code 사용 시 더 빠른 응답과 정확한 코드 생성 기대 가능."
 
 ## 출력 (JSON만, 다른 텍스트 없이)
 ```json
@@ -209,9 +219,9 @@ def process_with_gemini(articles, all_sources, max_retries=2):
   {{
     "index": 0,
     "title_ko": "한국어 제목",
-    "summary_ko": "한 줄 핵심 요약",
-    "key_points": ["포인트 1", "포인트 2", "포인트 3"],
-    "significance": "이 뉴스의 의미와 전망",
+    "summary_ko": "핵심 사실 1문장 (-음/-임 체)",
+    "key_points": ["사실 1", "사실 2", "사실 3"],
+    "my_impact": "나에게 미치는 실질적 영향 1문장",
     "category": "model"
   }}
 ]
@@ -336,23 +346,23 @@ def _build_news_items(processed_articles):
         trust = a.get("trust", 3)
         trust_stars = "★" * trust + "☆" * (5 - trust)
 
-        # key_points & significance (Phase C)
+        # key_points & my_impact
         key_points = a.get("key_points", [])
-        significance = a.get("significance", "")
+        my_impact = a.get("my_impact", "") or a.get("significance", "")
 
-        # key_points는 기본 노출, significance만 접기
+        # key_points는 접기, my_impact는 바로 노출
         kp_html = ""
         if key_points:
             kp_items = "".join(f"<li>{kp}</li>" for kp in key_points)
-            kp_html = f'\n          <ul class="key-points">{kp_items}</ul>'
-        sig_html = ""
-        if significance:
-            sig_html = f"""
+            kp_html = f"""
           <details class="news-details">
-            <summary>왜 중요한가?</summary>
-            <div class="news-significance">{significance}</div>
+            <summary>자세히 보기</summary>
+            <ul class="key-points">{kp_items}</ul>
           </details>"""
-        details_html = kp_html + sig_html
+        impact_html = ""
+        if my_impact:
+            impact_html = f'\n          <div class="news-impact">{my_impact}</div>'
+        details_html = impact_html + kp_html
 
         items += f"""
       <li class="news-item" data-category="{cat}">
@@ -440,7 +450,7 @@ CSS = """
     .news-title a:hover { color: #6b4ce6; }
     .news-source { font-size: 12px; color: #999; margin-left: 6px; font-weight: 400; }
     .news-summary { font-size: 13px; color: #666; margin: 4px 0; line-height: 1.6; }
-    .news-meta { font-size: 11px; color: #999; display: flex; gap: 12px; margin-top: 4px; align-items: center; }
+    .news-meta { font-size: 11px; color: #999; display: flex; gap: 8px; margin-top: 4px; align-items: center; flex-wrap: nowrap; }
     .news-tag {
       display: inline-block; font-size: 11px; padding: 1px 8px;
       border-radius: 10px; font-weight: 500;
@@ -482,6 +492,11 @@ CSS = """
       line-height: 1.7;
     }
     .key-points li { margin-bottom: 4px; }
+    .news-impact {
+      font-size: 13px; color: #6b4ce6; font-weight: 500;
+      margin: 6px 0 2px 0; line-height: 1.5;
+    }
+    .news-impact::before { content: "→ "; }
     .news-significance {
       font-size: 13px; color: #555; background: #f8f7ff;
       padding: 8px 12px; border-radius: 6px; margin: 6px 0;
@@ -503,20 +518,26 @@ CSS = """
     }
     /* 모바일 반응형 */
     @media (max-width: 600px) {
-      header { flex-direction: column; gap: 6px; padding: 8px 12px; }
+      header { flex-direction: column; gap: 6px; padding: 10px 14px; }
       nav { flex-wrap: wrap; gap: 6px; }
-      nav a { font-size: 12px; padding: 6px 10px; }
-      .date-bar { font-size: 11px; padding: 4px 12px; }
-      main { padding: 6px 12px; }
-      .filter-btn { padding: 6px 14px; font-size: 12px; min-height: 36px; }
-      .news-item { gap: 8px; padding: 10px 0; }
-      .news-num { min-width: 22px; font-size: 13px; }
-      .news-title { font-size: 14px; }
-      .news-summary { font-size: 12px; }
-      .key-points { font-size: 12px; margin-left: 16px; }
-      .news-significance { font-size: 12px; }
+      nav a { font-size: 13px; padding: 7px 12px; }
+      .date-bar { font-size: 12px; padding: 6px 14px; }
+      main { padding: 8px 14px; }
+      .filter-btn { padding: 7px 14px; font-size: 13px; min-height: 38px; }
+      .news-item { gap: 10px; padding: 14px 0; }
+      .news-num { min-width: 24px; font-size: 15px; }
+      .news-title { font-size: 16px; line-height: 1.4; }
+      .news-source { font-size: 12px; display: block; margin-left: 0; margin-top: 2px; }
+      .news-summary { font-size: 14px; line-height: 1.6; }
+      .key-points { font-size: 14px; margin-left: 16px; line-height: 1.7; }
+      .news-impact { font-size: 14px; }
+      .news-significance { font-size: 14px; }
+      .news-meta { gap: 6px; margin-top: 6px; flex-wrap: nowrap; }
+      .news-tag { font-size: 11px; padding: 2px 8px; white-space: nowrap; }
+      .trust { font-size: 11px; white-space: nowrap; }
+      .news-details summary { font-size: 13px; }
       .archive-header { flex-direction: column; gap: 6px; }
-      #archive-date-select { width: 100%; }
+      #archive-date-select { width: 100%; font-size: 14px; padding: 8px 12px; }
     }
 """
 
@@ -537,23 +558,27 @@ JS = """
     });
   });
 
-  // 카테고리 필터
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      const filter = btn.dataset.filter;
-      let num = 1;
-      document.querySelectorAll('#tab-news .news-item').forEach(item => {
-        if (filter === 'all' || item.dataset.category === filter) {
-          item.style.display = 'flex';
-          item.querySelector('.news-num').textContent = num++;
-        } else {
-          item.style.display = 'none';
-        }
+  // 카테고리 필터 (뉴스 피드 + 아카이브 공통)
+  function setupFilters(container) {
+    container.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        container.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const filter = btn.dataset.filter;
+        let num = 1;
+        container.querySelectorAll('.news-item').forEach(item => {
+          if (filter === 'all' || item.dataset.category === filter) {
+            item.style.display = 'flex';
+            item.querySelector('.news-num').textContent = num++;
+          } else {
+            item.style.display = 'none';
+          }
+        });
       });
     });
-  });
+  }
+  setupFilters(document.getElementById('tab-news'));
+  setupFilters(document.getElementById('tab-archive'));
 
   // 아카이브 기능
   async function loadArchiveIndex() {
@@ -579,7 +604,12 @@ JS = """
   }
 
   document.getElementById('archive-date-select').addEventListener('change', e => {
-    if (e.target.value) loadArchiveDate(e.target.value);
+    if (e.target.value) {
+      // 필터 리셋
+      document.querySelectorAll('#tab-archive .filter-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector('#tab-archive .filter-btn[data-filter="all"]').classList.add('active');
+      loadArchiveDate(e.target.value);
+    }
   });
 
   async function loadArchiveDate(date) {
@@ -622,10 +652,10 @@ JS = """
       const trust = a.trust || 3;
       const stars = '\\u2605'.repeat(trust) + '\\u2606'.repeat(5 - trust);
       const kps = (a.key_points || []).map(k => '<li>' + k + '</li>').join('');
-      const sig = a.significance || '';
+      const impact = a.my_impact || a.significance || '';
       let det = '';
-      if (kps) det += '<ul class="key-points">' + kps + '</ul>';
-      if (sig) det += '<details class="news-details"><summary>\\uc65c \\uc911\\uc694\\ud55c\\uac00?</summary><div class="news-significance">' + sig + '</div></details>';
+      if (impact) det += '<div class="news-impact">' + impact + '</div>';
+      if (kps) det += '<details class="news-details"><summary>\\uc790\\uc138\\ud788 \\ubcf4\\uae30</summary><ul class="key-points">' + kps + '</ul></details>';
       const li = document.createElement('li');
       li.className = 'news-item';
       li.dataset.category = cat;
@@ -696,6 +726,14 @@ def generate_html(processed_articles, all_sources):
       <select id="archive-date-select">
         <option value="">날짜를 선택하세요</option>
       </select>
+    </div>
+    <div class="filters archive-filters">
+      <button class="filter-btn active" data-filter="all">전체</button>
+      <button class="filter-btn" data-filter="model">모델/빅3</button>
+      <button class="filter-btn" data-filter="dev">개발</button>
+      <button class="filter-btn" data-filter="content">콘텐츠 생성</button>
+      <button class="filter-btn" data-filter="insight">인사이트</button>
+      <button class="filter-btn" data-filter="tip">팁</button>
     </div>
     <ol id="archive-list" class="news-list"></ol>
     <div id="archive-empty" class="empty-state">
