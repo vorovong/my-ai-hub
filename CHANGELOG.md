@@ -1,5 +1,22 @@
 # Changelog
 
+## v3.1 — 공식 소스 확장 (2026-02-21)
+
+### 소스 추가 (6개)
+- **Anthropic News** — 빅3 중 유일하게 누락되었던 Claude 개발사 (RSS 없음, 수동)
+- **Midjourney Updates** — 이미지 생성 AI 대표 (`updates.midjourney.com/rss/`)
+- **Kling AI** — 영상 생성 AI, Kuaishou (RSS 없음, 수동)
+- **Suno** — 음악 생성 AI (RSS 없음, 수동)
+- **Figma Blog** — AI 디자인 도구 (`figma.com/blog/feed/atom.xml`)
+- **ElevenLabs** — 음성/TTS AI (`elevenlabs.io/docs/changelog.rss`)
+
+### 현황
+- 총 27개 소스 (19개 RSS 자동, 8개 수동)
+- 콘텐츠 생성(content_creation) 카테고리 소스 대폭 강화
+- 19개 RSS 전체 파싱 테스트 통과 (실패 0, 느린 소스 0)
+
+---
+
 ## v3.0 — 피드백 전면 반영 + 마이그레이션 (2026-02-21)
 
 ### 콘텐츠 구조 재설계

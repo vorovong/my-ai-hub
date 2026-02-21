@@ -147,9 +147,11 @@ KST = timezone(timedelta(hours=9))
 
 ---
 
-## 현재 상태 (v3 작업 중)
+## 현재 상태 (v3.1)
 
 - 27개 소스에서 자동 수집 (19개 RSS, 8개 수동)
+- v3.1에서 콘텐츠 생성 카테고리 소스 대폭 강화 (Midjourney, Kling, Suno, Figma, ElevenLabs)
+- 빅3 소스 완성 (Google AI, OpenAI, Anthropic)
 - 원문 크롤링 + 유튜브 자막 추출로 깊이 있는 요약
 - 날짜별 아카이브 축적 중
 - 모바일 반응형 대응 (v3에서 글씨 크기/태그 밀림 개선)
@@ -159,9 +161,8 @@ KST = timezone(timedelta(hours=9))
 
 ### 알려진 제한사항
 - 일부 사이트(TechCrunch 등) 봇 차단으로 원문 크롤링 실패 → RSS description fallback
-- `google.generativeai` 패키지 deprecated 경고 → `google.genai`로 마이그레이션 필요
-- Stability AI 등 RSS 없는 소스는 자동 수집 불가
-- **근본적 한계**: 단일 파이프라인 구조로는 "편집장" 수준의 큐레이션 불가 → 독립 프로젝트 전환 예정
+- RSS 없는 소스 8개 (Anthropic, Kling, Suno, Stability AI, 최개발, The Batch, 업스테이지, AI Journal)는 자동 수집 불가
+- **근본적 한계**: 단일 파이프라인 구조로는 "편집장" 수준의 큐레이션 불가 → 독립 프로젝트 전환 완료 (ai-briefing)
 
 ---
 
