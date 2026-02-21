@@ -147,7 +147,29 @@ KST = timezone(timedelta(hours=9))
 
 ---
 
-## 현재 상태 (v3.1)
+## v3.2 — 코드 리팩토링 (2026-02-21)
+
+### 동기
+- `collect_news.py` 809줄 단일 파일에 CSS 148줄, JS 132줄이 Python 문자열로 인라인
+- 매직 넘버 산재, 전역 변수 사용, 109줄짜리 거대 함수 존재
+- 핵심 로직 파악이 어려운 구조
+
+### 변경 내용
+- **CSS/JS 분리**: `static/styles.css` + `static/app.js`로 외부화, `_load_asset()`로 빌드 시 인라인
+- **CONFIG 딕셔너리**: 매직 넘버 13개를 파일 상단에 통합
+- **함수 분리**: `process_with_gemini` → `_build_gemini_prompt` + `_call_gemini_with_retry` + `_parse_gemini_response`
+- **전역 상태 제거**: `main()` 함수 도입, `gemini_client` 의존성 주입
+- **헬퍼 함수**: `_trust_stars()`, `_build_filter_buttons()` — 2곳 이상 중복 제거
+- **타입 힌트**: 모든 public 함수에 추가
+
+### 결과
+- 809줄 → 616줄 (-24%)
+- 기능 동일 (리팩토링 전후 HTML 구조 비교 통과)
+- 19/19 RSS 테스트 통과
+
+---
+
+## 현재 상태 (v3.2)
 
 - 27개 소스에서 자동 수집 (19개 RSS, 8개 수동)
 - v3.1에서 콘텐츠 생성 카테고리 소스 대폭 강화 (Midjourney, Kling, Suno, Figma, ElevenLabs)
@@ -158,6 +180,7 @@ KST = timezone(timedelta(hours=9))
 - KST 기준 날짜 표시
 - 개조식 명사구 + my_impact 기반 콘텐츠 구조 (v3)
 - 아카이브 카테고리 필터 추가 (v3)
+- **코드 리팩토링 완료** — CSS/JS 분리, CONFIG 통합, 함수 분해 (v3.2)
 
 ### 알려진 제한사항
 - 일부 사이트(TechCrunch 등) 봇 차단으로 원문 크롤링 실패 → RSS description fallback
@@ -167,7 +190,8 @@ KST = timezone(timedelta(hours=9))
 ---
 
 ## 향후 개선 후보 (미니 프로젝트 범위)
-- [ ] `google.genai` 패키지 마이그레이션
+- [x] `google.genai` 패키지 마이그레이션 (v3.0에서 완료)
+- [x] 코드 리팩토링 (v3.2에서 완료)
 - [ ] GA 연동
 - [ ] 주간 요약 자동 생성
 
