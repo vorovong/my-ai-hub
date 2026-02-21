@@ -13,7 +13,7 @@ Gemini 2.5 Flash로 요약/분류하여 HTML 페이지를 생성한다.
 """
 
 import feedparser
-import google.generativeai as genai
+from google import genai
 from dotenv import load_dotenv
 import os
 import json
@@ -27,7 +27,7 @@ BASE_DIR = Path(__file__).parent
 ARCHIVE_DIR = BASE_DIR / "archive"
 
 load_dotenv(BASE_DIR / ".env")
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 
 # ---------------------------------------------------------------------------
@@ -158,8 +158,6 @@ def ensure_source_diversity(articles, max_per_source=3):
 
 def process_with_gemini(articles, all_sources, max_retries=2):
     """Gemini로 기사를 요약/분류. JSON 파싱 에러 시 최대 2회 재시도."""
-    model = genai.GenerativeModel("gemini-2.5-flash")
-
     # 소스 맥락 생성
     source_context = "\n".join(
         f"- {s['name']} (신뢰도 {s.get('trust',3)}/5): {s.get('note','')}"
@@ -232,7 +230,9 @@ def process_with_gemini(articles, all_sources, max_retries=2):
 
     for attempt in range(max_retries + 1):
         try:
-            response = model.generate_content(prompt)
+            response = gemini_client.models.generate_content(
+                model="gemini-2.5-flash", contents=prompt
+            )
             text = response.text
             if "```json" in text:
                 text = text.split("```json")[1].split("```")[0]
