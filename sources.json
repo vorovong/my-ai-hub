@@ -212,23 +212,23 @@
     },
     {
       "name": "Kling AI",
-      "url": "https://klingai.com",
+      "url": "https://app.klingai.com/global/blog",
       "feed_url": null,
       "type": "blog",
       "trust": 4,
       "focus": ["content_creation", "model_news"],
       "language": "en",
-      "note": "Kuaishou 영상 생성 AI. RSS 미제공."
+      "note": "Kuaishou 영상 생성 AI 공식 블로그. RSS 미제공."
     },
     {
       "name": "Suno",
-      "url": "https://suno.com",
+      "url": "https://suno.com/blog?tag=all",
       "feed_url": null,
       "type": "blog",
       "trust": 4,
       "focus": ["content_creation", "model_news"],
       "language": "en",
-      "note": "음악 생성 AI. RSS 미제공."
+      "note": "음악 생성 AI 공식 블로그. RSS 미제공."
     },
     {
       "name": "Figma Blog",
