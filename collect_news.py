@@ -17,9 +17,11 @@ import google.generativeai as genai
 from dotenv import load_dotenv
 import os
 import json
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 import time
+
+KST = timezone(timedelta(hours=9))
 
 BASE_DIR = Path(__file__).parent
 ARCHIVE_DIR = BASE_DIR / "archive"
@@ -262,11 +264,11 @@ def process_with_gemini(articles, all_sources, max_retries=2):
 def save_archive(processed_articles):
     """날짜별 아카이브 JSON 저장 + 인덱스 업데이트"""
     ARCHIVE_DIR.mkdir(exist_ok=True)
-    today = datetime.now().strftime("%Y-%m-%d")
+    today = datetime.now(KST).strftime("%Y-%m-%d")
 
     archive_data = {
         "date": today,
-        "generated_at": datetime.now().isoformat(),
+        "generated_at": datetime.now(KST).isoformat(),
         "article_count": len(processed_articles),
         "articles": processed_articles,
     }
@@ -645,8 +647,8 @@ JS = """
 
 def generate_html(processed_articles, all_sources):
     """HTML 페이지 생성. 아카이브 탭 + 상세 보기 포함."""
-    today = datetime.now().strftime("%Y년 %m월 %d일")
-    weekday = ["월", "화", "수", "목", "금", "토", "일"][datetime.now().weekday()]
+    today = datetime.now(KST).strftime("%Y년 %m월 %d일")
+    weekday = ["월", "화", "수", "목", "금", "토", "일"][datetime.now(KST).weekday()]
 
     news_items = _build_news_items(processed_articles)
     source_items = _build_source_items(all_sources)
