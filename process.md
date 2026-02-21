@@ -1,0 +1,169 @@
+# ai-news-hub 개발 프로세스
+
+## 프로젝트 개요
+- **목적**: AI 뉴스 자동 수집 + 요약 + 아카이브
+- **사이트**: https://vorovong.github.io/my-ai-hub/
+- **레포**: https://github.com/vorovong/my-ai-hub
+- **자동화**: 매일 KST 08시 GitHub Actions 실행
+
+---
+
+## v1 — 초기 구축 (2026-02-20)
+
+첫 미니 프로젝트로 완성. Python + Gemini 2.5 Flash + GitHub Actions + GitHub Pages.
+
+- sources.json에 17개 소스 등록 (12개 자동 수집, 5개 feed 없음)
+- RSS 수집 → Gemini 요약/분류 → index.html 생성 → gh-pages 배포
+- 카테고리: model, dev, content, insight, tip
+- 탭: 뉴스피드 / 소스 / 팁모음(비어있음) / 에센셜지식(비어있음)
+
+### v1 문제점 (크리틱 결과)
+1. **콘텐츠 깊이 부족** — RSS 미리보기 1~2문장만 Gemini에 전달
+2. **아카이브 없음** — 매일 index.html 덮어쓰기, 어제 뉴스 소멸
+3. **소스 편중** — AI 개발 위주, 창작(이미지/영상/음악) 소스 부족
+4. **안정성** — Gemini JSON 파싱 에러 핸들링 없음
+
+---
+
+## v2 — 4단계 대규모 개선 (2026-02-21)
+
+### Phase A: 안정성 기반
+- `process_with_gemini()` — JSON 파싱 에러 시 최대 2회 재시도 (`try/except` + `time.sleep(2)`)
+- `ensure_source_diversity()` — 소스당 최대 3개 제한 (Gemini 호출 전 적용)
+- Gemini 완전 실패 시 `load_latest_archive()`로 이전 아카이브 fallback
+
+### Phase B: 아카이브 시스템
+- `archive/{날짜}.json` 형태로 일별 저장
+- `archive/archive_index.json` — 날짜 목록 자동 업데이트
+- `daily-update.yml`에 `keep_files: true` 추가 → gh-pages에서 아카이브 누적 유지
+- 워크플로우에 `git checkout origin/gh-pages -- archive/` 추가 → 기존 아카이브 가져오기
+- **탭 구조 정리**: 팁모음/에센셜지식 삭제 → **뉴스피드 / 아카이브 / 소스** 3탭
+- 아카이브 탭: 날짜 선택 → fetch()로 JSON 로드 → 렌더링
+
+### Phase C: 콘텐츠 깊이 개선
+- **원문 크롤링**: `trafilatura` 라이브러리로 기사 본문 추출 (최대 3000자)
+- **유튜브 자막 추출**: `youtube-transcript-api`로 영상 자막 텍스트화 (한국어 우선, 영어 fallback)
+- `youtube-transcript-api` v1.2.4 API 변경 대응: `YouTubeTranscriptApi().fetch()` 사용
+- `trafilatura` 실행에 `lxml_html_clean` 추가 설치 필요 (의존성 누락 해결)
+- **Gemini 프롬프트 개선**: GeekNews 스타일 구조적 정리
+  - `summary_ko`: 2-3문장 요약
+  - `key_points`: 핵심 포인트 3개 (개조식)
+  - `significance`: 의미/전망
+- **HTML 상세 보기**: key_points는 기본 노출, significance만 `<details>` 접기
+
+### Phase D: 소스 확장
+- **GeekNews RSS 복구**: `https://news.hada.io/rss/news` (기존 null → 동작 확인)
+- **새 소스 4개 추가**:
+  - Hugging Face Blog (`https://huggingface.co/blog/feed.xml`)
+  - Matt Wolfe YouTube (`channel_id=UChpleBmo18P08aKCIgti38g`) — AI 창작 도구 리뷰
+  - The Rundown AI (`https://rss.beehiiv.com/feeds/2R3C6Bt5wj.xml`) — 매일 AI 뉴스
+  - Stability AI (RSS 없음, 수동) — Stable Diffusion 개발사
+- 총 21개 소스 (자동 수집 16개, 수동 5개)
+
+### 수정 파일
+| 파일 | 변경 |
+|------|------|
+| `collect_news.py` | 전면 재작성 (390줄 → 700줄) |
+| `.github/workflows/daily-update.yml` | 아카이브, 패키지, keep_files |
+| `sources.json` | 소스 4개 추가, GeekNews RSS 복구 |
+
+---
+
+## v2.1 — UX 개선 (2026-02-21)
+
+v2 배포 후 사용자 관점 크리틱으로 발견한 문제 수정.
+
+### 발견한 문제
+1. **요약이 한 줄로 너무 짧음** — "자세히 보기" 안 누르면 정보량 부족
+2. **"자세히 보기" 발견성 부족** — 작은 파란 텍스트, 클릭 유인 약함
+3. **카테고리 편중** — insight 55%, content 10%
+4. **모바일 대응 없음**
+
+### 수정 내용
+- `summary_ko` 2-3문장으로 복원 (1문장 → 2-3문장)
+- `key_points` 기본 노출 (접기 제거), `significance`만 접기로 변경
+- "자세히 보기" → **"왜 중요한가?"** 라벨 변경
+- 카테고리 균형 규칙: content 최소 3개, insight 최대 40%
+- 모바일 반응형 CSS 추가 (`@media max-width: 600px`)
+
+---
+
+## v2.2 — 타임존 버그 수정 (2026-02-21)
+
+### 증상
+사이트에 "2월 20일"로 표시 — 사용자는 오전 9시(KST)에 확인했는데 어제 날짜.
+
+### 원인
+GitHub Actions 서버가 UTC. cron `0 23 * * *` (UTC 23시 = KST 08시)에 실행하면 `datetime.now()`가 UTC 기준 전날 날짜 반환.
+
+### 수정
+`datetime.now()` → `datetime.now(KST)` (모든 곳에 적용)
+```python
+from datetime import datetime, timezone, timedelta
+KST = timezone(timedelta(hours=9))
+```
+
+---
+
+---
+
+## v3 — 사용자 피드백 기반 미니 프로젝트 완결 (2026-02-21, 진행 중)
+
+### 사용자 피드백 요약
+1. 모바일 글씨 크기 너무 작음
+2. 분류 태그가 모바일에서 한 줄 밀림 (아이폰 크롬)
+3. 내용을 개조식 명사구(-음, -임)로 간결하게 작성해야 함
+4. "왜 중요한가?" 차별성 없음 — 기사 본문 내용의 중언부언
+5. 아카이브에 분류별 필터 없음 — 모든 컨텐츠가 섞인 채 날짜별 표시
+6. 공식 소스 누락 (Anthropic, Midjourney, Kling, Suno, Figma, ElevenLabs 등)
+7. GA 연동으로 사용 습관 파악 가능
+8. **핵심**: 데이터 홍수 → "편집장 에이전트" 필요 (독립 프로젝트로 전환 대상)
+
+### 완료된 작업
+- [x] **모바일 CSS 개선**: 폰트 사이즈 전반 상향 (12-14px → 14-16px), `.news-source` 모바일에서 별도 줄로 분리, `.news-meta` flex-wrap: nowrap으로 태그 밀림 방지
+- [x] **Gemini 프롬프트 재설계**:
+  - 사용자 프로필 구체화 (비개발자, AI 도구 활용, 콘텐츠 제작 관심)
+  - "필요 없는 것" 명시 (논문 디테일, 펀딩 뉴스, 기본 개념 반복)
+  - 모든 텍스트 개조식 명사구(-음/-임 체)로 변경
+  - `significance` → `my_impact` — 기사 반복이 아닌 "나에게 미치는 실질적 영향" 1문장
+  - 최대 기사 수 20개 → 15개 (양보다 질)
+  - 개조식 GOOD/BAD 예시 프롬프트에 포함
+- [x] **HTML 구조 변경**:
+  - `my_impact`를 기사 요약 바로 아래 "→" 화살표와 함께 보라색으로 즉시 노출
+  - `key_points`를 "자세히 보기" 접기 안으로 이동 (이전: 기본 노출)
+  - 정보 계층: 제목 → 요약 → 나에게 미치는 영향 → (자세히 보기: 핵심 사실 3개)
+- [x] **아카이브 카테고리 필터 추가**: 뉴스 피드와 동일한 필터 버튼, 날짜 변경 시 필터 리셋, 공통 `setupFilters()` 함수로 리팩토링
+
+### 남은 작업
+- [ ] **공식 소스 확장** — Anthropic, Midjourney, Kling, Suno, Figma, ElevenLabs 등 sources.json 추가
+- [ ] **PRD + Spec 문서** — 편집장 에이전트 아키텍처의 독립 프로젝트 설계 문서
+- [ ] **리뷰 문서** — 미니 → 풀 프로젝트 전환 과정을 동료가 이해할 수 있는 문서
+
+---
+
+## 현재 상태 (v3 작업 중)
+
+- 21개 소스에서 자동 수집 (16개 RSS, 5개 수동)
+- 원문 크롤링 + 유튜브 자막 추출로 깊이 있는 요약
+- 날짜별 아카이브 축적 중
+- 모바일 반응형 대응 (v3에서 글씨 크기/태그 밀림 개선)
+- KST 기준 날짜 표시
+- 개조식 명사구 + my_impact 기반 콘텐츠 구조 (v3)
+- 아카이브 카테고리 필터 추가 (v3)
+
+### 알려진 제한사항
+- 일부 사이트(TechCrunch 등) 봇 차단으로 원문 크롤링 실패 → RSS description fallback
+- `google.generativeai` 패키지 deprecated 경고 → `google.genai`로 마이그레이션 필요
+- Stability AI 등 RSS 없는 소스는 자동 수집 불가
+- **근본적 한계**: 단일 파이프라인 구조로는 "편집장" 수준의 큐레이션 불가 → 독립 프로젝트 전환 예정
+
+---
+
+## 향후 개선 후보 (미니 프로젝트 범위)
+- [ ] `google.genai` 패키지 마이그레이션
+- [ ] GA 연동
+- [ ] 주간 요약 자동 생성
+
+## 독립 프로젝트 전환 예정 (편집장 아키텍처)
+- 스카우트 → 편집장(타이틀 필터링) → 리서처(심층 크롤링+보완) → 편집장(최종 편집)
+- 상세 내용은 PRD/Spec 문서로 별도 작성 예정
