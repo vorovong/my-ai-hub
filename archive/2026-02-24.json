@@ -1,0 +1,232 @@
+{
+  "date": "2026-02-24",
+  "generated_at": "2026-02-24T08:37:47.250375+09:00",
+  "article_count": 15,
+  "articles": [
+    {
+      "index": 3,
+      "link": "https://www.youtube.com/watch?v=EQ-Rnx-k-Ec",
+      "title_ko": "에이전틱 워크플로우로 실제 업무 해결하기",
+      "summary_ko": "Lablup 신정규 대표가 Backend.AI:GO 개발 사례를 통해 에이전트 코딩 시대의 업무 자동화 철학 및 고속 추론 중요성 설명함.",
+      "key_points": [
+        "Backend.AI:GO, 40일 만에 100만 줄 규모로 완성된 AI 에이전트 시스템임.",
+        "로컬/클라우드 모델 연결, 장애 대응, 벤치마킹 등 다양한 기능이 통합됨.",
+        "에이전트 코딩 시대의 토큰 사용량, 병목 현상, Thinking Budget 감소법이 논의됨."
+      ],
+      "my_impact": "AI 에이전트를 활용한 업무 자동화에 대한 깊은 이해를 얻고, 나의 업무에 적용할 수 있는 에이전틱 워크플로우 아이디어를 얻을 수 있음.",
+      "category": "insight",
+      "source": "노정석 (Chester Roh)",
+      "trust": 5
+    },
+    {
+      "index": 4,
+      "link": "https://www.youtube.com/watch?v=bRsZH4CbhB4",
+      "title_ko": "OpenClaw와 2026년 2월의 AI 패러다임 변화 신호",
+      "summary_ko": "빠르게 발전하는 AI 에이전트 트렌드(OpenClaw 등)와 멀티 에이전트 확장 흐름, 그리고 관련 보안 리스크가 분석됨.",
+      "key_points": [
+        "OpenClaw, Pi, Moltbook 등 AI 에이전트/하네스 트렌드가 빠르게 부상 중임.",
+        "Ralph Loop 방식과 Human-in-the-Loop 방식의 에이전트 조율이 비교됨.",
+        "멀티 에이전트 시스템의 확장과 함께 보안 및 샌드박싱 리스크가 논의됨."
+      ],
+      "my_impact": "AI 에이전트 기술의 최신 동향과 미래 발전 방향을 이해하고, 보안 리스크에 대한 인식을 높여 AI 도구 선택 시 고려할 수 있음.",
+      "category": "insight",
+      "source": "노정석 (Chester Roh)",
+      "trust": 5
+    },
+    {
+      "index": 5,
+      "link": "https://www.youtube.com/watch?v=MZdhBBvUmvU",
+      "title_ko": "Physical AI의 현재와 미래 동향 분석",
+      "summary_ko": "sudoremove 박종현 대표와 Physical AI 및 VLA 모델의 로보틱스 핵심 역할과 데이터 문제 해결 전략이 논의됨.",
+      "key_points": [
+        "Physical AI와 VLA(Vision-Language-Action) 모델이 로보틱스 분야의 핵심 화두로 부상함.",
+        "Boston Dynamics Atlas, Figure Helix 등 최신 로봇 데모를 통해 '안 되던 게 되는' 변화의 원인이 분석됨.",
+        "로봇 행동 데이터의 스케일 문제와 텔레오퍼레이션, 시뮬레이션, 데이터 증강 전략이 강조됨."
+      ],
+      "my_impact": "미래 AI 기술의 한 축인 Physical AI와 로봇 분야의 발전을 이해하고, 콘텐츠 제작 시 3D 모델링 또는 로봇 관련 AI 활용 아이디어를 얻을 수 있음.",
+      "category": "insight",
+      "source": "노정석 (Chester Roh)",
+      "trust": 5
+    },
+    {
+      "index": 21,
+      "link": "https://blog.google/company-news/inside-google/message-ceo/sundar-pichai-ai-impact-summit-2026/",
+      "title_ko": "순다르 피차이, AI에 대한 구글의 큰 꿈 밝힘",
+      "summary_ko": "구글 CEO 순다르 피차이가 AI Impact Summit에서 구글의 AI 투자 확대 및 인도를 AI 허브로 육성하는 비전을 발표함.",
+      "key_points": [
+        "구글이 인도에 150억 달러 인프라 투자를 통해 기가와트급 컴퓨팅 및 해저 케이블 AI 허브를 구축함.",
+        "AI가 우주 데이터센터, 완전 자율주행차 등 새로운 발견 시대를 열 것임을 강조함.",
+        "인도 시장의 AI 잠재력과 구글의 장기적인 AI 비전이 제시됨."
+      ],
+      "my_impact": "구글의 AI 전략 방향을 파악하고, 미래 AI 기술이 우리 삶과 비즈니스에 가져올 변화를 예상하는 데 도움을 받을 수 있음.",
+      "category": "model",
+      "source": "Google AI Blog",
+      "trust": 5
+    },
+    {
+      "index": 23,
+      "link": "https://blog.google/innovation-and-ai/products/gemini-app/lyria-3/",
+      "title_ko": "제미니 앱, 이제 음악 생성 가능",
+      "summary_ko": "구글 딥마인드의 최신 음악 생성 모델 Lyria 3가 제미니 앱에 베타 출시되어 텍스트나 사진/영상으로 맞춤형 음악 생성이 가능해짐.",
+      "key_points": [
+        "Lyria 3 모델을 통해 텍스트 프롬프트 기반으로 고품질의 독창적인 음악이 생성됨.",
+        "사용자가 스타일, 보컬, 템포 등 음악 요소에 대한 더 많은 통제권을 가짐.",
+        "사진이나 비디오를 업로드하여 콘텐츠 분위기에 맞는 음악과 가사를 만들 수 있음."
+      ],
+      "my_impact": "Gemini 앱을 활용하여 영상, 이미지 콘텐츠에 맞는 배경 음악이나 사운드를 직접 생성하고, 콘텐츠 제작의 새로운 가능성을 탐색할 수 있음.",
+      "category": "content",
+      "source": "Google AI Blog",
+      "trust": 5
+    },
+    {
+      "index": 25,
+      "link": "https://openai.com/index/frontier-alliance-partners",
+      "title_ko": "OpenAI, 기업 AI 확장을 위한 Frontier Alliance Partners 발표",
+      "summary_ko": "OpenAI가 기업 고객의 AI 에이전트 도입을 지원하기 위해 주요 컨설팅 기업들과 파트너십을 체결하여 '프론티어 얼라이언스'를 출범함.",
+      "key_points": [
+        "OpenAI는 BCG, McKinsey, Accenture, Capgemini 등 4개 컨설팅사와 다년간의 파트너십을 맺음.",
+        "기업용 AI 솔루션인 OpenAI Frontier를 고객사에 안전하고 확장 가능하게 배포하는 것이 목표임.",
+        "AI 단독이 아닌 전략, 프로세스 재설계, 문화와 결합되어야 실질적 변혁이 가능하다고 강조됨."
+      ],
+      "my_impact": "OpenAI의 기업용 AI 서비스 확장 전략을 이해하고, 향후 AI 에이전트를 업무에 도입할 때 참고할 수 있는 정보임.",
+      "category": "model",
+      "source": "OpenAI Blog",
+      "trust": 5
+    },
+    {
+      "index": 53,
+      "link": "https://www.figma.com/blog/introducing-claude-code-to-figma/",
+      "title_ko": "Claude Code로 생성된 코드를 Figma에서 편집 가능한 디자인으로 변환",
+      "summary_ko": "Claude Code에서 생성된 코드를 Figma로 가져와 편집 가능한 UI 디자인으로 전환하고, Figma MCP를 통해 다시 코드베이스로 반영하는 워크플로우가 소개됨.",
+      "key_points": [
+        "Claude Code로 만든 실제 UI를 Figma 캔버스에서 편집 가능한 디자인으로 변환 가능함.",
+        "코드는 수렴(converging)에, 캔버스는 발산(diverging)에 강점이 있어 유연한 협업이 가능해짐.",
+        "Figma MCP를 사용하여 디자인 변경 사항을 코드베이스에 다시 적용하는 Roundtripping이 지원됨."
+      ],
+      "my_impact": "Claude Code나 다른 AI 코딩 도구로 만든 웹 UI를 Figma에서 시각적으로 수정하고 협업한 뒤 다시 코드로 적용하는 방식으로 디자인 작업을 효율화할 수 있음.",
+      "category": "tip",
+      "source": "Figma Blog",
+      "trust": 5
+    },
+    {
+      "index": 60,
+      "link": "https://www.anthropic.com/news/detecting-and-preventing-distillation-attacks",
+      "title_ko": "Anthropic, Claude 모델 무단 증류 공격 발견 및 방지 노력",
+      "summary_ko": "Anthropic이 DeepSeek 등 3개 중국 AI 연구소에서 Claude 모델의 역량을 불법적으로 추출하기 위한 대규모 증류 공격을 적발함.",
+      "key_points": [
+        "약 24,000개의 위조 계정을 통해 1,600만 건 이상의 Claude와의 대화가 발생함.",
+        "증류(Distillation)는 모델의 기능을 복제하는 데 사용될 수 있는 기술로, 불법적 사용 시 국가 안보 위험을 초래할 수 있음.",
+        "무단 증류된 모델은 안전 장치가 부족하여 악의적인 용도로 오용될 가능성이 있음."
+      ],
+      "my_impact": "주요 AI 모델의 보안 및 윤리적 사용에 대한 경각심을 가지고, AI 모델 사용 시 신뢰할 수 있는 소스와 안전한 환경을 선택하는 중요성을 인지해야 함.",
+      "category": "model",
+      "source": "Anthropic News",
+      "trust": 5
+    },
+    {
+      "index": 61,
+      "link": "https://www.anthropic.com/news/claude-code-security",
+      "title_ko": "Claude Code Security, 사이버 보안 기능 제공",
+      "summary_ko": "Anthropic이 Claude Code Security를 통해 코드베이스의 보안 취약점을 스캔하고 수정 패치를 제안하여 사이버 공격에 대비하는 기능을 발표함.",
+      "key_points": [
+        "Claude Code 웹 버전에 제한된 연구 프리뷰로 Claude Code Security 기능이 추가됨.",
+        "기존 분석 도구가 놓치는 미묘한 취약점까지 찾아내고 타겟팅된 소프트웨어 패치를 제안함.",
+        "AI가 보안 취약점 발견 능력을 향상시키면서, 이 기술을 방어자에게 제공하여 AI 기반 공격에 대비하는 것이 목표임."
+      ],
+      "my_impact": "AI 코딩 도구의 발전이 보안 영역까지 확대됨을 확인하고, Claude Code를 활용한 코드 생성 시 보안 검토에 도움을 받을 수 있을 것으로 기대함.",
+      "category": "dev",
+      "source": "Anthropic News",
+      "trust": 5
+    },
+    {
+      "index": 39,
+      "link": "https://huggingface.co/blog/ggml-joins-hf",
+      "title_ko": "GGML 및 llama.cpp, Hugging Face에 합류하여 로컬 AI 발전 가속화",
+      "summary_ko": "GGML과 llama.cpp 팀이 Hugging Face에 합류하여 로컬 AI 추론 기술의 장기적인 발전과 오픈소스 커뮤니티 지원을 강화할 것임.",
+      "key_points": [
+        "llama.cpp는 로컬 AI 추론의 핵심 빌딩 블록이며, Hugging Face는 모델 정의의 핵심 빌딩 블록임.",
+        "GGML 팀은 llama.cpp 프로젝트의 100% 오픈소스 유지 및 기술 방향에 대한 완전한 자율성을 가짐.",
+        "새로운 모델을 로컬에서 쉽고 빠르게 배포할 수 있도록 원활한 통합에 집중할 예정임."
+      ],
+      "my_impact": "로컬에서 AI 모델을 실행하는 기술이 발전하고 있으며, 향후 더 다양한 AI 모델을 내 컴퓨터나 휴대폰에서 활용할 기회가 늘어날 것임을 예상할 수 있음.",
+      "category": "model",
+      "source": "Hugging Face Blog",
+      "trust": 5
+    },
+    {
+      "index": 40,
+      "link": "https://huggingface.co/blog/unsloth-jobs",
+      "title_ko": "Unsloth 및 Hugging Face Jobs로 AI 모델 무료 훈련하기",
+      "summary_ko": "Unsloth와 Hugging Face Jobs를 사용하여 Claude Code 등 AI 코딩 에이전트로 LLM을 빠르고 효율적으로 미세조정하는 방법이 소개됨.",
+      "key_points": [
+        "Unsloth는 일반적인 방식 대비 2배 빠른 훈련 속도와 60% 적은 VRAM 사용량을 제공함.",
+        "작은 언어 모델(SLM)이 미세조정을 위한 이상적인 후보이며, CPU, 휴대폰 등 온디바이스 배포에 최적화됨.",
+        "Hugging Face Jobs에서 모델을 훈련하고 무료 크레딧을 받을 수 있는 기회가 제공됨."
+      ],
+      "my_impact": "비개발자로서도 AI 코딩 도구(Claude Code)를 활용해 특정 업무에 최적화된 작은 AI 모델을 직접 미세조정하는 방법을 배우고, 비용 효율적으로 나만의 AI를 구축하는 아이디어를 얻을 수 있음.",
+      "category": "tip",
+      "source": "Hugging Face Blog",
+      "trust": 5
+    },
+    {
+      "index": 15,
+      "link": "https://www.youtube.com/watch?v=j-B8ymGWlIE",
+      "title_ko": "Adobe & NVIDIA의 놀라운 실시간 렌더링 기술",
+      "summary_ko": "Adobe와 NVIDIA가 개발한 새로운 기술이 현실과 같은 복잡한 시각 효과를 실시간으로 렌더링하는 데 성공하며 한계를 뛰어넘음.",
+      "key_points": [
+        "이 기술은 Glinty라는 이름으로, 사실적인 빛 반사 및 재질 표현을 실시간으로 가능하게 함.",
+        "기존 기술로는 어려웠던 고품질 그래픽 렌더링을 즉시 처리할 수 있게 됨.",
+        "게임, 영상 제작, 3D 디자인 등 다양한 분야에서 시각적 콘텐츠의 몰입감을 크게 향상시킬 잠재력이 있음."
+      ],
+      "my_impact": "영상, 이미지, 3D 콘텐츠 제작 시 고품질 시각 효과를 실시간으로 적용하여 작업 시간을 단축하고 창작의 폭을 넓힐 수 있는 기술 발전의 기대감을 높임.",
+      "category": "content",
+      "source": "Two Minute Papers",
+      "trust": 5
+    },
+    {
+      "index": 59,
+      "link": "https://stability.ai/news/universal-music-group-and-stability-ai-announce-strategic-alliance",
+      "title_ko": "UMG & Stability AI, AI 음악 창작 도구 공동 개발 전략적 제휴",
+      "summary_ko": "유니버설 뮤직 그룹(UMG)과 Stability AI가 아티스트 중심의 책임감 있는 AI 음악 창작 도구 개발을 위한 전략적 제휴를 발표함.",
+      "key_points": [
+        "아티스트, 프로듀서, 작곡가에게 윤리적으로 훈련된 AI 기반 전문 음악 창작 도구를 제공할 것임.",
+        "아티스트와의 협력을 통해 차세대 도구를 개발하고, 창작 과정과 예술적 통제를 침해하지 않도록 할 것임.",
+        "음악 산업에서 AI 기술의 책임 있는 혁신과 창작자 권리 보호를 목표로 함."
+      ],
+      "my_impact": "음악 생성 AI 분야의 주요 기업과 대형 음반사가 협력하여 신뢰할 수 있고 윤리적인 AI 음악 도구가 나올 것으로 기대하며, 나의 음악 콘텐츠 제작에 활용할 기회를 주시할 수 있음.",
+      "category": "content",
+      "source": "Stability AI",
+      "trust": 4
+    },
+    {
+      "index": 63,
+      "link": "https://suno.com/blog/studio1_2",
+      "title_ko": "Suno Studio 1.2 업데이트: Warp Markers, Remove FX 등 새로운 기능 추가",
+      "summary_ko": "Suno Studio가 Warp Markers, Remove FX, Alternates, Time Signature 지원 등 새로운 기능들을 추가하여 음악 창작에 대한 사용자 제어력을 더욱 강화함.",
+      "key_points": [
+        "Warp Markers 기능으로 음악의 특정 부분을 유연하게 조정할 수 있게 됨.",
+        "Remove FX 기능은 특정 효과를 제거하여 더욱 정교한 편집을 가능하게 함.",
+        "Alternates 및 Time Signature 지원으로 다양한 음악적 실험이 가능해짐."
+      ],
+      "my_impact": "Suno Studio의 새로운 기능들을 활용하여 AI로 생성한 음악을 더욱 세밀하게 편집하고 나의 콘텐츠에 맞게 커스터마이징할 수 있음.",
+      "category": "content",
+      "source": "Suno",
+      "trust": 4
+    },
+    {
+      "index": 48,
+      "link": "https://updates.midjourney.com/v8-rating-party-final-round/",
+      "title_ko": "Midjourney V8 출시 임박: 최종 이미지 평가 라운드 시작",
+      "summary_ko": "Midjourney V8 모델 출시를 앞두고 사용자 선호도 기반의 개인화 시스템 보정을 위한 최종 이미지 평가 라운드가 시작됨.",
+      "key_points": [
+        "사용자는 두 개의 이미지 중 개인적인 미적 취향에 따라 더 아름다운 이미지를 선택하여 평가함.",
+        "이 평가를 통해 V8 모델의 개인화 시스템을 최적화하고 최종 출시 준비를 마침.",
+        "V8은 사용자들에게 이전보다 향상된 이미지 생성 경험을 제공할 것으로 예상됨."
+      ],
+      "my_impact": "Midjourney V8 모델의 출시가 가까워졌음을 알 수 있으며, 새로운 모델이 제공할 향상된 이미지 생성 기능을 활용하여 콘텐츠 제작에 적극적으로 적용할 준비를 할 수 있음.",
+      "category": "content",
+      "source": "Midjourney Updates",
+      "trust": 4
+    }
+  ]
+}
